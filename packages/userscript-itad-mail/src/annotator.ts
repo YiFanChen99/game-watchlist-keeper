@@ -1,4 +1,4 @@
-import { formatPrice, type Prices } from '@watchlist/price-lookup';
+import { formatHistoricalLow, formatPrice, type Prices } from '@watchlist/price-lookup';
 
 import type { GameInfo, SheetLookup } from './sheet';
 
@@ -31,11 +31,11 @@ export function findWaitlistGames(root: ParentNode): WaitlistGame[] {
 
 /**
  * e.g. `W4 $50, 史$90`: the want level with its wanted price (目標價), then the historical low (最低$).
- * A blank cell shows as `-`, prices that cannot be read as `?`.
+ * A blank cell shows as `-`, prices that cannot be read as `?`, an outdated historical low as `史$!90`.
  */
 function formatInfo({ want, prices }: GameInfo): string {
-    const price = (pick: (all: Prices) => number | null) => (prices ? formatPrice(pick(prices)) : '?');
-    return `W${want || '-'} $${price(all => all.wanted)}, 史$${price(all => all.historicalLow)}`;
+    const show = (format: (all: Prices) => string) => (prices ? format(prices) : '?');
+    return `W${want || '-'} $${show(all => formatPrice(all.wanted))}, 史$${show(formatHistoricalLow)}`;
 }
 
 /** One matched game: a link to its sheet row when there is one, else plain text. */

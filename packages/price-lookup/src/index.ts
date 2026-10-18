@@ -1,4 +1,4 @@
-import { Column } from '@watchlist/game-record-writer';
+import { Column, unreliableScorePrefix } from '@watchlist/game-record-writer';
 import type { RowValues, SheetApi } from '@watchlist/sheet-api';
 
 /** Header of the sheet's 目標價 column: the wanted price, a formula from AnyDeal, Regular and 原價. */
@@ -14,6 +14,11 @@ export const priceColumns: readonly string[] = [Column.lowestPrice, targetPriceC
 export interface Prices {
     /** 最低$: the lowest price seen, from 原價 and 最低off. */
     historicalLow: number | null;
+    /**
+     * 最低$ starts with `!`: its 最低off was kept, marked outdated, by a refresh that could not
+     * read the SteamDB block (COLUMNS.md 最低off).
+     */
+    historicalLowIsOutdated: boolean;
     /** 目標價: the price the game is wanted at. */
     wanted: number | null;
 }
@@ -29,8 +34,11 @@ function toPrice(value: string | number | undefined): number | null {
 
 /** The prices in a row read that included `priceColumns`. */
 export function toPrices(values: RowValues): Prices {
+    const historicalLow = values[Column.lowestPrice];
+    const historicalLowIsOutdated = typeof historicalLow === 'string' && historicalLow.trim().startsWith(unreliableScorePrefix);
     return {
-        historicalLow: toPrice(values[Column.lowestPrice]),
+        historicalLow: toPrice(historicalLowIsOutdated ? historicalLow.trim().slice(unreliableScorePrefix.length) : historicalLow),
+        historicalLowIsOutdated,
         wanted: toPrice(values[targetPriceColumn]),
     };
 }
@@ -46,4 +54,10 @@ export async function lookupPrices(api: SheetApi, appId: number): Promise<Prices
 /** One price for display: rounded, since TWD is shown without decimals; `-` for null. */
 export function formatPrice(price: number | null): string {
     return price === null ? '-' : String(Math.round(price));
+}
+
+/** 最低$ for display as `formatPrice` shows it, keeping the sheet's `!` when it is outdated, e.g. `!90`. */
+export function formatHistoricalLow({ historicalLow, historicalLowIsOutdated }: Prices): string {
+    const mark = historicalLowIsOutdated && historicalLow !== null ? unreliableScorePrefix : '';
+    return `${mark}${formatPrice(historicalLow)}`;
 }

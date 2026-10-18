@@ -1,4 +1,4 @@
-import { formatPrice, lookupPrices, type Prices } from '@watchlist/price-lookup';
+import { formatHistoricalLow, formatPrice, lookupPrices, type Prices } from '@watchlist/price-lookup';
 import { SheetApiError } from '@watchlist/sheet-api';
 
 import { withSheetApi } from './tampermonkey';
@@ -37,8 +37,8 @@ function createMagnifierIcon(): SVGSVGElement {
  * e.g. `$50, 史$90`: the wanted price (目標價), then the historical low (最低$), as userscript-itad-mail
  * shows them after the want level, which is in the annotation already.
  */
-function formatPrices({ historicalLow, wanted }: Prices): string {
-    return `$${formatPrice(wanted)}, 史$${formatPrice(historicalLow)}`;
+function formatPrices(prices: Prices): string {
+    return `$${formatPrice(prices.wanted)}, 史$${formatHistoricalLow(prices)}`;
 }
 
 /** A magnifier button plus its status bubble, for a giveaway heading worth a price check; the caller places both. */
