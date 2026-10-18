@@ -8,7 +8,7 @@ import {
 import { SheetApiError, type NumberedRowResponse, type SheetApi } from '@watchlist/sheet-api';
 
 import { Panel } from './panel';
-import { parseSelectedRow, parseSheetLocation, type SheetLocation } from './selection';
+import { parseSelectedRow, parseSheetLocation, showsRefreshButton, type SheetLocation } from './selection';
 import { fetchText, withSheetApi } from './tampermonkey';
 import { parseHtml } from './trustedHtml';
 
@@ -19,6 +19,12 @@ import { parseHtml } from './trustedHtml';
  *    from then on the button shows only there
  */
 const spreadsheetIdKey = 'watchlistSpreadsheetId';
+
+/**
+ * How often to look for a switch of worksheet: Sheets switches without reloading the page or
+ * firing `hashchange` (checked 2026-10-18), so only polling the URL notices.
+ */
+const locationCheckIntervalMs = 1000;
 
 /** A refusal worded for the user; nothing was written. */
 class RefusalError extends Error {}
@@ -122,6 +128,16 @@ function main(): void {
     const panel: Panel = new Panel(() => {
         void refresh(panel, page);
     });
+    let checkedUrl = '';
+    const showOnWatchlistSheet = () => {
+        if (location.href === checkedUrl) {
+            return;
+        }
+        checkedUrl = location.href;
+        panel.setVisible(showsRefreshButton(parseSheetLocation(checkedUrl), GM_getValue<string>(spreadsheetIdKey, '')));
+    };
+    showOnWatchlistSheet();
+    setInterval(showOnWatchlistSheet, locationCheckIntervalMs);
 }
 
 main();

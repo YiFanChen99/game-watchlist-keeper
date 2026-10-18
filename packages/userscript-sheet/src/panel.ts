@@ -8,12 +8,13 @@ const messageLifetimeMs = 60_000;
  * row numbers and just above the worksheet tabs.
  */
 export class Panel {
+    private readonly area = document.createElement('div');
     private readonly button = document.createElement('button');
     private readonly message = document.createElement('div');
     private hideTimer: ReturnType<typeof setTimeout> | undefined;
 
     constructor(onClick: () => void) {
-        const area = document.createElement('div');
+        const area = this.area;
         area.id = 'EkkoSheetRowUpdater';
         Object.assign(area.style, {
             position: 'fixed', left: '6px', bottom: '48px', zIndex: '1000',
@@ -38,6 +39,11 @@ export class Panel {
         });
         area.append(this.button, this.message);
         document.body.append(area);
+    }
+
+    /** Show or hide the button, with its message box. */
+    setVisible(visible: boolean): void {
+        this.area.style.display = visible ? 'flex' : 'none';
     }
 
     setBusy(busy: boolean): void {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { parseSelectedRow, parseSheetLocation } from '../src/selection';
+import { parseSelectedRow, parseSheetLocation, showsRefreshButton, watchlistSheetGid } from '../src/selection';
 
 describe('parseSelectedRow', () => {
     it('reads the row of a cell, a range within one row, or a whole row', () => {
@@ -30,5 +30,25 @@ describe('parseSheetLocation', () => {
     it('leaves gid null when the URL has none, and refuses other URLs', () => {
         expect(parseSheetLocation('https://docs.google.com/spreadsheets/d/abc/edit')).toEqual({ spreadsheetId: 'abc', gid: null });
         expect(parseSheetLocation('https://docs.google.com/document/d/abc/edit')).toBeNull();
+    });
+});
+
+describe('showsRefreshButton', () => {
+    const on = (spreadsheetId: string, gid: string | null) => ({ spreadsheetId, gid });
+
+    it('shows on the game list worksheet of the known spreadsheet only', () => {
+        expect(showsRefreshButton(on('abc', watchlistSheetGid), 'abc')).toBe(true);
+        expect(showsRefreshButton(on('abc', '0'), 'abc')).toBe(false);
+        expect(showsRefreshButton(on('other', watchlistSheetGid), 'abc')).toBe(false);
+    });
+
+    it('shows on that worksheet of any spreadsheet until a refresh learns which one', () => {
+        expect(showsRefreshButton(on('abc', watchlistSheetGid), '')).toBe(true);
+        expect(showsRefreshButton(on('abc', '0'), '')).toBe(false);
+    });
+
+    it('hides while the URL names no worksheet, and off spreadsheets', () => {
+        expect(showsRefreshButton(on('abc', null), 'abc')).toBe(false);
+        expect(showsRefreshButton(null, '')).toBe(false);
     });
 });

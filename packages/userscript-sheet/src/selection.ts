@@ -27,3 +27,18 @@ export function parseSheetLocation(url: string): SheetLocation | null {
     }
     return { spreadsheetId, gid: /[#?&]gid=(\d+)/.exec(url)?.[1] ?? null };
 }
+
+/**
+ * The game list's worksheet. A gid only numbers the tabs within one spreadsheet, so it names
+ * nothing on its own; the spreadsheet itself stays out of this public repo and is learnt instead.
+ */
+export const watchlistSheetGid = '1386365003';
+
+/**
+ * @param knownSpreadsheetId The spreadsheet a refresh succeeded on; `''` before the first one.
+ * @returns Whether the refresh button belongs on `page`: the game list's worksheet of that
+ *   spreadsheet, or of any spreadsheet until one is known.
+ */
+export function showsRefreshButton(page: SheetLocation | null, knownSpreadsheetId: string): boolean {
+    return page?.gid === watchlistSheetGid && (!knownSpreadsheetId || knownSpreadsheetId === page.spreadsheetId);
+}

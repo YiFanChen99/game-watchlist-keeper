@@ -33,7 +33,14 @@ Google Sheets 的 CSP 要求 Trusted Types（`require-trusted-types-for 'script'
 
 ### 按鈕出現在哪裡
 
-`@match` 是所有試算表（Sheet 的網址不寫進公開的 repo）。第一次刷新成功後，試算表 id 存在 Tampermonkey 的 `watchlistSpreadsheetId`，之後按鈕只出現在這份試算表。在那之前，每份試算表都會有按鈕；換了試算表的話，到 Tampermonkey 的「儲存」分頁刪掉 `watchlistSpreadsheetId`。
+按鈕只出現在遊戲清單的工作表，兩個條件都要符合：
+
+- **工作表**：網址的 `gid` 是 `1386365003`（`src/selection.ts` 的 `watchlistSheetGid`）。gid 只是試算表裡分頁的編號，不同試算表之間會重複，單獨看不出是哪份試算表，所以直接寫在程式裡。
+- **試算表**：`@match` 是所有試算表，因為 Sheet 的網址不寫進公開的 repo。第一次刷新成功後，試算表 id 存在 Tampermonkey 的 `watchlistSpreadsheetId`，之後按鈕只出現在這份試算表。在那之前，任何試算表的這個 gid 分頁都會有按鈕；換了試算表的話，到 Tampermonkey 的「儲存」分頁刪掉 `watchlistSpreadsheetId`。
+
+在 Sheets 裡切換分頁不會重新載入頁面，也不會觸發 `hashchange`，所以腳本每秒檢查一次網址，按鈕最慢 1 秒內跟著出現或消失。工作表的 gid 改了（例如刪掉重建分頁）時，要改 `watchlistSheetGid`。
+
+按下去之後，流程第 3 步還會再比對一次 web app 回傳的那一列連結，所以就算按鈕出現在不對的地方，也不會寫錯列。
 
 ### 最低off 沒辦法更新
 
