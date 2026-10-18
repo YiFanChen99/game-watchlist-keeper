@@ -1,0 +1,23 @@
+{
+  "name": "@watchlist/tampermonkey-sheet-api",
+  "version": "0.1.0",
+  "private": true,
+  "description": "For userscripts: GM_xmlhttpRequest fetch functions, and the sheet-api client behind a token kept in Tampermonkey storage",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "check": "tsc --noEmit && eslint .",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@types/tampermonkey": "^5.0.4"
+  },
+  "dependencies": {
+    "@watchlist/core": "workspace:*",
+    "@watchlist/sheet-api": "workspace:*"
+  }
+}

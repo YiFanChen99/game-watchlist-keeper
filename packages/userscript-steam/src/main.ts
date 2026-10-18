@@ -7,16 +7,10 @@ import {
     refreshGame,
     sheetApiRowStore,
 } from '@watchlist/game-record-writer';
-import {
-    createSheetApi,
-    deployedWebAppUrl,
-    SheetApiError,
-    SheetApiUnauthorizedError,
-    type SheetApi,
-} from '@watchlist/sheet-api';
+import { SheetApiError } from '@watchlist/sheet-api';
 import { readSteamDbPrices } from '@watchlist/steam-info-scraper';
 
-import { copyText, fetchText, forgetToken, getToken, postText } from './gm';
+import { copyText, fetchText, withApi } from './tampermonkey';
 import { Panel } from './panel';
 
 /**
@@ -25,27 +19,6 @@ import { Panel } from './panel';
  */
 
 type Action = 'check' | 'add' | 'update';
-
-/** Runs `run` with the saved token; a rejected token is forgotten and asked for once more. */
-async function withApi<T>(run: (api: SheetApi) => Promise<T>): Promise<T> {
-    for (let attempt = 1; ; attempt++) {
-        const token = getToken();
-        if (!token) {
-            throw new Error('沒有輸入 Sheet API 的 token');
-        }
-        try {
-            return await run(createSheetApi({ webAppUrl: deployedWebAppUrl, token, fetchText, postText }));
-        } catch (error) {
-            if (!(error instanceof SheetApiUnauthorizedError)) {
-                throw error;
-            }
-            forgetToken();
-            if (attempt >= 2) {
-                throw error;
-            }
-        }
-    }
-}
 
 const isSheetError = (error: unknown, code: SheetApiError['code']) =>
     error instanceof SheetApiError && error.code === code;

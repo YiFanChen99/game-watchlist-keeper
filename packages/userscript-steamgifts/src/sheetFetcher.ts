@@ -1,7 +1,7 @@
 import { Column, parseSheetDate } from '@watchlist/game-record-writer';
 import { toDumpRow } from '@watchlist/sheet-api';
 
-import { withSheetApi } from './gm';
+import { withSheetApi } from './tampermonkey';
 import type { SheetData } from './types';
 
 const updateDurationMs = 24 * 60 * 60 * 1000; // 24 hours

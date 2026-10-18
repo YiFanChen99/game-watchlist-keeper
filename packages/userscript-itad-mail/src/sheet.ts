@@ -2,7 +2,7 @@ import { createNameMatcher } from '@watchlist/core';
 import { Column } from '@watchlist/game-record-writer';
 import type { SheetDumpRow } from '@watchlist/sheet-api';
 
-import { withSheetApi } from './gm';
+import { withSheetApi } from './tampermonkey';
 
 /** Header of the sheet's Ceiling column, a formula from AnyDeal, Regular and 原價; read only. */
 const ceilingColumn = 'Ceiling';

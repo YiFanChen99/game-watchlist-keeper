@@ -80,6 +80,19 @@ importers:
         specifier: workspace:*
         version: link:../core
 
+  packages/tampermonkey-sheet-api:
+    dependencies:
+      '@watchlist/core':
+        specifier: workspace:*
+        version: link:../core
+      '@watchlist/sheet-api':
+        specifier: workspace:*
+        version: link:../sheet-api
+    devDependencies:
+      '@types/tampermonkey':
+        specifier: ^5.0.4
+        version: 5.5.0
+
   packages/userscript-itad-mail:
     dependencies:
       '@watchlist/core':
@@ -91,6 +104,9 @@ importers:
       '@watchlist/sheet-api':
         specifier: workspace:*
         version: link:../sheet-api
+      '@watchlist/tampermonkey-sheet-api':
+        specifier: workspace:*
+        version: link:../tampermonkey-sheet-api
     devDependencies:
       '@types/tampermonkey':
         specifier: ^5.0.4
@@ -115,6 +131,9 @@ importers:
       '@watchlist/steam-info-scraper':
         specifier: workspace:*
         version: link:../steam-info-scraper
+      '@watchlist/tampermonkey-sheet-api':
+        specifier: workspace:*
+        version: link:../tampermonkey-sheet-api
     devDependencies:
       '@types/tampermonkey':
         specifier: ^5.0.4
@@ -134,6 +153,9 @@ importers:
       '@watchlist/sheet-api':
         specifier: workspace:*
         version: link:../sheet-api
+      '@watchlist/tampermonkey-sheet-api':
+        specifier: workspace:*
+        version: link:../tampermonkey-sheet-api
     devDependencies:
       '@types/tampermonkey':
         specifier: ^5.0.4

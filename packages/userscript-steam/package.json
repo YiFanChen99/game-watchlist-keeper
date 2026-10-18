@@ -18,6 +18,7 @@
     "@watchlist/core": "workspace:*",
     "@watchlist/game-record-writer": "workspace:*",
     "@watchlist/sheet-api": "workspace:*",
-    "@watchlist/steam-info-scraper": "workspace:*"
+    "@watchlist/steam-info-scraper": "workspace:*",
+    "@watchlist/tampermonkey-sheet-api": "workspace:*"
   }
 }

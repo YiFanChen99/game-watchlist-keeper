@@ -11,6 +11,7 @@ pnpm workspace monorepo，每個 `packages/*` 都是獨立的 node module，以 
 | `core` | library | 共用的小工具：名稱正規化與比對、AppID 與商店網址、fetch 函式型別 |
 | `steam-info-scraper` | library | 抓 Steam 並解析成原始資料（商店頁、評論、SteamDB 區塊），不含 Sheet 格式 |
 | `sheet-api` | library | Apps Script Web App 的 client |
+| `tampermonkey-sheet-api` | library | 給 userscript 用：`GM_xmlhttpRequest` 的 fetch 函式，以及 token 存在 Tampermonkey 的 `sheet-api` client |
 | `game-record-writer` | library | 新增 / 更新 Sheet 遊戲列的所有規則與流程；欄位對照表在它的 `COLUMNS.md` |
 | `price-lookup` | library | 遊戲 id / 名稱 → 價格資訊 |
 | `apps-script` | Apps Script | Sheet 查詢 / 寫入的 Web App 原始碼 |
@@ -19,7 +20,7 @@ pnpm workspace monorepo，每個 `packages/*` 都是獨立的 node module，以 
 | `userscript-itad-mail` | userscript | Gmail 的 ITAD 通知信：Waitlist 遊戲旁顯示 Sheet 的購買/期待度與 Ceiling |
 | `userscript-sheet` | userscript | Google Sheet：資料刷新備援 |
 
-library 不直接呼叫 `GM_xmlhttpRequest`，網路請求由 userscript 注入，所以 library 可以直接在 Node 上跑測試。
+library 不直接呼叫 `GM_xmlhttpRequest`，網路請求由 userscript 注入，所以 library 可以直接在 Node 上跑測試。例外是 `tampermonkey-sheet-api`：它就是三支 userscript 共用的注入端。
 
 ## Development
 

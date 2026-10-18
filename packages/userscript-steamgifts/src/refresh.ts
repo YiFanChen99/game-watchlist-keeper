@@ -1,6 +1,6 @@
 import { Column, refreshGame, sheetApiRowStore, type SheetRowStore, type ValueChange } from '@watchlist/game-record-writer';
 
-import { fetchText, withSheetApi } from './gm';
+import { fetchText, withSheetApi } from './tampermonkey';
 
 export interface RefreshResult {
     /** The row's whole name cell, aliases included, as the dump's `B` has it. */
