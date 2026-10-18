@@ -168,3 +168,13 @@ export function pickValues(
     }
     return values;
 }
+
+/**
+ * Link that opens the sheet with the whole `row` selected.
+ *
+ * @param spreadsheetUrl `Spreadsheet.getUrl()`, e.g. `https://docs.google.com/spreadsheets/d/<id>/edit`.
+ * @param sheetId `Sheet.getSheetId()`, the URL's `gid`.
+ */
+export function rowUrl(spreadsheetUrl: string, sheetId: number, row: number): string {
+    return `${spreadsheetUrl}#gid=${sheetId}&range=${row}:${row}`;
+}

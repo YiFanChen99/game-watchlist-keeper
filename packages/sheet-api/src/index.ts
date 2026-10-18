@@ -76,6 +76,8 @@ export interface RowResponse {
     row: number;
     /** The requested columns, keyed by header name. Dates come as `YYYY/M/D`. */
     values: RowValues;
+    /** Opens the sheet with this row selected. Absent from web app versions before it was added. */
+    url?: string;
 }
 
 /** POST body: write cells of the row with `appId`, or add a row for it. */

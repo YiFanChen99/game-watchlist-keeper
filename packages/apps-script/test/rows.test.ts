@@ -8,6 +8,7 @@ import {
     planAppend,
     planUpdate,
     RequestError,
+    rowUrl,
     shiftAppIds,
 } from '../src/rows';
 
@@ -110,5 +111,12 @@ describe('pickValues', () => {
             [Column.releaseDate]: '2013/7/9',
             [Column.special]: '英',
         });
+    });
+});
+
+describe('rowUrl', () => {
+    it('selects the whole row of the worksheet', () => {
+        expect(rowUrl('https://docs.google.com/spreadsheets/d/abc/edit', 123, 45))
+            .toBe('https://docs.google.com/spreadsheets/d/abc/edit#gid=123&range=45:45');
     });
 });

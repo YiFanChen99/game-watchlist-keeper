@@ -26,6 +26,7 @@ import {
     planAppend,
     planUpdate,
     RequestError,
+    rowUrl,
     shiftAppIds,
     type AppIdIndex,
     type CellWrite,
@@ -167,9 +168,14 @@ function readRow(appIdParam: string | undefined, columnsParam: string | undefine
         return { row, values: {} };
     }
     const cells = context.sheet.getRange(row, 1, 1, context.lastColumn).getValues()[0] as CellValue[];
-    const timeZone = SpreadsheetApp.getActiveSpreadsheet().getSpreadsheetTimeZone();
+    const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+    const timeZone = spreadsheet.getSpreadsheetTimeZone();
     const formatDate = (date: Date) => Utilities.formatDate(date, timeZone, 'yyyy/M/d');
-    return { row, values: pickValues(context.columns, names, cells, formatDate) };
+    return {
+        row,
+        values: pickValues(context.columns, names, cells, formatDate),
+        url: rowUrl(spreadsheet.getUrl(), context.sheet.getSheetId(), row),
+    };
 }
 
 function applyWrites(sheet: GoogleAppsScript.Spreadsheet.Sheet, row: number, writes: readonly CellWrite[]): void {
