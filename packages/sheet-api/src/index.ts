@@ -66,6 +66,7 @@ export const tokenParam = 'token';
 
 /**
  * GET `?action=row&appId=<id>&columns=<name>,<name>`: the row whose name HYPERLINK links `appId`.
+ * `?action=row&row=<n>&columns=…` instead: sheet row `n`, with the app id its name links.
  * Without `action`, GET returns the whole-sheet dump.
  */
 export const rowAction = 'row';
@@ -78,6 +79,13 @@ export interface RowResponse {
     values: RowValues;
     /** Opens the sheet with this row selected. Absent from web app versions before it was added. */
     url?: string;
+}
+
+/** Response of the `row` action by row number. */
+export interface NumberedRowResponse extends RowResponse {
+    /** The app id the row's name HYPERLINK links. */
+    appId: number;
+    url: string;
 }
 
 /** POST body: write cells of the row with `appId`, or add a row for it. */
@@ -141,6 +149,12 @@ export interface SheetApi {
     fetchDump(): Promise<SheetDump>;
     /** Rejects with code `not-found` when no row has `appId`. */
     readRow(appId: number, columns: readonly string[]): Promise<RowResponse>;
+    /**
+     * Read sheet row `row` (1-based), for a caller that knows the row but not its app id.
+     * Rejects with code `not-found` when its name links no app, and `duplicate` when an earlier
+     * row links the same app, since writes by app id would land on that earlier row.
+     */
+    readRowByNumber(row: number, columns: readonly string[]): Promise<NumberedRowResponse>;
     /** @returns The row with `appId`, or null. */
     findRow(appId: number): Promise<number | null>;
     /** Write only the given cells of the row with `appId`. */
@@ -182,6 +196,11 @@ export function createSheetApi({ webAppUrl, token, fetchText, postText }: SheetA
         async readRow(appId, columns) {
             const query = `&action=${rowAction}&appId=${appId}&columns=${encodeURIComponent(columns.join(','))}`;
             return parseResponse<RowResponse>(await fetchText(`${baseUrl}${query}`));
+        },
+
+        async readRowByNumber(row, columns) {
+            const query = `&action=${rowAction}&row=${row}&columns=${encodeURIComponent(columns.join(','))}`;
+            return parseResponse<NumberedRowResponse>(await fetchText(`${baseUrl}${query}`));
         },
 
         async findRow(appId) {

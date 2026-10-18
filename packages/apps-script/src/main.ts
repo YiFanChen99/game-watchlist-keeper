@@ -7,6 +7,7 @@ import { Column } from '@watchlist/game-record-writer';
 import {
     rowAction,
     tokenParam,
+    type NumberedRowResponse,
     type RowResponse,
     type SheetApiErrorBody,
     type WriteRequest,
@@ -159,23 +160,50 @@ function parseAppId(value: unknown): number {
     return appId;
 }
 
-function readRow(appIdParam: string | undefined, columnsParam: string | undefined): RowResponse {
-    const appId = parseAppId(appIdParam);
-    const names = (columnsParam ?? '').split(',').map(name => name.trim()).filter(Boolean);
-    const context = openSheet();
-    const row = requireRow(context, appId);
+/**
+ * Sheet row `rowParam` and the app id its name links. Writes go by app id, so a row whose app
+ * id an earlier row also links is refused: the write would land on that earlier row.
+ */
+function resolveNumberedRow(context: SheetContext, rowParam: string): { row: number; appId: number } {
+    const row = Number(rowParam);
+    if (!Number.isSafeInteger(row) || row < firstDataRow || row > context.sheet.getLastRow()) {
+        throw new RequestError('invalid', `bad row ${rowParam}`);
+    }
+    const appId = extractAppId(context.sheet.getRange(row, context.nameColumn + 1).getFormula());
+    if (appId === null) {
+        throw new RequestError('not-found', `row ${row} links no app`);
+    }
+    const linked = findRow(context, appId) ?? scanRow(context, appId);
+    if (linked !== row) {
+        throw new RequestError('duplicate', `row ${linked} also links app ${appId}`);
+    }
+    return { row, appId };
+}
+
+/** The requested columns of `row`, and a link that selects it. */
+function readCells(context: SheetContext, row: number, names: readonly string[]): RowResponse & { url: string } {
+    const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+    const url = rowUrl(spreadsheet.getUrl(), context.sheet.getSheetId(), row);
     if (!names.length) {
-        return { row, values: {} };
+        return { row, values: {}, url };
     }
     const cells = context.sheet.getRange(row, 1, 1, context.lastColumn).getValues()[0] as CellValue[];
-    const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
     const timeZone = spreadsheet.getSpreadsheetTimeZone();
     const formatDate = (date: Date) => Utilities.formatDate(date, timeZone, 'yyyy/M/d');
-    return {
-        row,
-        values: pickValues(context.columns, names, cells, formatDate),
-        url: rowUrl(spreadsheet.getUrl(), context.sheet.getSheetId(), row),
-    };
+    return { row, values: pickValues(context.columns, names, cells, formatDate), url };
+}
+
+/** By `row` when given (`NumberedRowResponse`), else by `appId`. */
+function readRow(parameter: Record<string, string | undefined>): RowResponse | NumberedRowResponse {
+    const names = (parameter.columns ?? '').split(',').map(name => name.trim()).filter(Boolean);
+    const context = openSheet();
+    if (parameter.row !== undefined) {
+        const { row, appId } = resolveNumberedRow(context, parameter.row);
+        return { ...readCells(context, row, names), appId };
+    }
+    const row = requireRow(context, parseAppId(parameter.appId));
+    // Only finding the row (`findRow`): skip the extra reads.
+    return names.length ? readCells(context, row, names) : { row, values: {} };
 }
 
 function applyWrites(sheet: GoogleAppsScript.Spreadsheet.Sheet, row: number, writes: readonly CellWrite[]): void {
@@ -255,13 +283,13 @@ function checkToken(parameter: Record<string, string | undefined>): void {
 }
 
 /**
- * Without `action`: the whole-sheet dump. `action=row`: one row by app id (see `rowAction`).
+ * Without `action`: the whole-sheet dump. `action=row`: one row by app id or row number (see `rowAction`).
  */
 export function doGet(e: GoogleAppsScript.Events.DoGet): GoogleAppsScript.Content.TextOutput {
     try {
         checkToken(e.parameter);
         if (e.parameter.action === rowAction) {
-            return jsonOutput(JSON.stringify(readRow(e.parameter.appId, e.parameter.columns)));
+            return jsonOutput(JSON.stringify(readRow(e.parameter)));
         }
         const cache = dumpCache();
         let text = cache.get();

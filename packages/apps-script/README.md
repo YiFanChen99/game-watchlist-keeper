@@ -9,6 +9,7 @@
 - `doGet`：
   - 不帶 `action`：`STEAM` 工作表的整表傾印（`{ games, labelMap }`）。每個遊戲帶上名稱 HYPERLINK 連到的 `appId`（名稱不是 HYPERLINK 時省略）；列的轉換規則是 `@watchlist/sheet-api` 的 `toDumpRow`，讓 client 讀單列時套用同一套規則。
   - `action=row&appId=<id>&columns=<欄名>,<欄名>`：名稱欄連到這個 AppID 的那一列，回 `{ row, values, url }`。日期格式是 `YYYY/M/D`；`url` 開啟 Sheet 並選取整列（`#gid=<工作表>&range=<列>:<列>`）。`columns` 是空的時只回 `{ row, values: {} }`（只找列號，不多讀格子）。
+  - `action=row&row=<列號>&columns=<欄名>,<欄名>`：用列號讀那一列，回 `{ row, appId, values, url }`，`appId` 取自它名稱欄的 HYPERLINK。給只知道列號的 client（`userscript-sheet`）用。名稱不是 HYPERLINK 時回 `not-found`；前面還有別列連到同一個 AppID 時回 `duplicate`，因為寫入是用 AppID 找列，會寫到前面那一列。
 - `doPost`：body 是 JSON 的 `WriteRequest`。
   - `update`：只寫指定的欄位。名稱、公式欄（例如 最低$）不能寫，目前含公式的格子也不能寫。
   - `append`：先確認 Sheet 沒有這個 AppID（有的話回 `duplicate`），再在第 3 列後插入一列空白列（原本第 4 列起往下移一列），寫進新的第 4 列。第 3 列的公式（名稱除外）用 R1C1 複製下來，其餘寫入指定欄位。

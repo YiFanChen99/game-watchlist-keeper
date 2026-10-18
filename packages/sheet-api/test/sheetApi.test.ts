@@ -42,6 +42,15 @@ describe('createSheetApi() single rows', () => {
         expect(result).toEqual({ row: 12, values: { 原價: 499 } });
     });
 
+    it('reads a row by its number', async () => {
+        const fetchText = vi.fn(respond('{"row":12,"appId":570,"values":{"名稱":"Dota 2"},"url":"https://sheet#gid=1&range=12:12"}'));
+
+        const result = await createSheetApi({ webAppUrl, token, fetchText }).readRowByNumber(12, ['名稱']);
+
+        expect(fetchText).toHaveBeenCalledWith(`${baseUrl}&action=row&row=12&columns=${encodeURIComponent('名稱')}`);
+        expect(result).toEqual({ row: 12, appId: 570, values: { 名稱: 'Dota 2' }, url: 'https://sheet#gid=1&range=12:12' });
+    });
+
     it('finds a row, or null when the sheet has no such app id', async () => {
         expect(await createSheetApi({ webAppUrl, token, fetchText: respond('{"row":7,"values":{}}') }).findRow(570)).toBe(7);
         expect(await createSheetApi({ webAppUrl, token, fetchText: respond('{"error":"not-found"}') }).findRow(570)).toBeNull();
