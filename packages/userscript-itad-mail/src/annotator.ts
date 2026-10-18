@@ -1,3 +1,5 @@
+import { formatPrice, type Prices } from '@watchlist/price-lookup';
+
 import type { GameInfo, SheetLookup } from './sheet';
 
 /** Set on a game link once its annotation is added, so a rescan skips it. */
@@ -27,9 +29,13 @@ export function findWaitlistGames(root: ParentNode): WaitlistGame[] {
     return games;
 }
 
-/** e.g. `W4, $300`; a blank cell shows as `-`, a Ceiling that cannot be read as `?`. */
-function formatInfo({ want, ceiling }: GameInfo): string {
-    return `W${want || '-'}, $${ceiling === null ? '?' : ceiling || '-'}`;
+/**
+ * e.g. `W4 $50, 史$90`: the want level with its wanted price (Ceiling), then the historical low (最低$).
+ * A blank cell shows as `-`, prices that cannot be read as `?`.
+ */
+function formatInfo({ want, prices }: GameInfo): string {
+    const price = (pick: (all: Prices) => number | null) => (prices ? formatPrice(pick(prices)) : '?');
+    return `W${want || '-'} $${price(all => all.wanted)}, 史$${price(all => all.historicalLow)}`;
 }
 
 /** One matched game: a link to its sheet row when there is one, else plain text. */
@@ -58,8 +64,8 @@ function createAnnotation(mark: HTMLElement): HTMLElement {
 }
 
 /**
- * Put the sheet's 購買/期待度 and Ceiling after the game's `in Waitlist`, e.g.
- * `in Waitlist (W4, $300)`, linked to the game's sheet row; several matched rows are joined with ` / `.
+ * Put the sheet's 購買/期待度, 最低$ and Ceiling after the game's `in Waitlist`, e.g.
+ * `in Waitlist (W4 $50, 史$90)`, linked to the game's sheet row; several matched rows are joined with ` / `.
  */
 export async function annotate({ link, mark }: WaitlistGame, lookup: SheetLookup): Promise<void> {
     link.setAttribute(doneAttribute, '');

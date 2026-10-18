@@ -1,11 +1,9 @@
 import { createNameMatcher } from '@watchlist/core';
 import { Column } from '@watchlist/game-record-writer';
+import { priceColumns, toPrices, type Prices } from '@watchlist/price-lookup';
 import type { SheetDumpRow } from '@watchlist/sheet-api';
 
 import { withSheetApi } from './tampermonkey';
-
-/** Header of the sheet's Ceiling column, a formula from AnyDeal, Regular and 原價; read only. */
-const ceilingColumn = 'Ceiling';
 
 /** Tampermonkey storage key of the cached dump. */
 const dumpKey = 'sheetDump';
@@ -22,8 +20,8 @@ interface CachedDump {
 export interface GameInfo {
     /** 購買/期待度1~5 as the row has it; `''` when blank. */
     want: string;
-    /** Ceiling as the row has it; null for a game without an app id, whose row cannot be read alone. */
-    ceiling: string | null;
+    /** 最低$ and Ceiling; null for a game without an app id, whose row cannot be read alone. */
+    prices: Prices | null;
     /** Opens the sheet at the game's row; null without an app id, or from a web app version without it. */
     url: string | null;
 }
@@ -44,7 +42,7 @@ const cellText = (value: string | number | undefined) => String(value ?? '').tri
 
 /**
  * Looks up ITAD game names in the sheet. The dump is fetched once, on the first lookup, and each
- * row's cells once per page load: the dump has no Ceiling, so a matched game's row is read by app id.
+ * row's cells once per page load: the dump has no prices, so a matched game's row is read by app id.
  */
 export class SheetLookup {
     private matcher: Promise<(rawName: string) => SheetDumpRow[]> | null = null;
@@ -66,18 +64,19 @@ export class SheetLookup {
         return (await this.matcher)(name);
     }
 
-    /** The row's 購買/期待度, Ceiling and link; a game without an app id gets the dump's want level only. */
+    /** The row's 購買/期待度, prices and link; a game without an app id gets the dump's want level only. */
     info(game: SheetDumpRow): Promise<GameInfo> {
         const { appId } = game;
         if (appId === undefined) {
-            return Promise.resolve({ want: cellText(game.K), ceiling: null, url: null });
+            return Promise.resolve({ want: cellText(game.K), prices: null, url: null });
         }
         let row = this.rows.get(appId);
         if (!row) {
-            row = withSheetApi(api => api.readRow(appId, [Column.wantLevel, ceilingColumn]))
+            // One read for both the want level and the prices.
+            row = withSheetApi(api => api.readRow(appId, [Column.wantLevel, ...priceColumns]))
                 .then(({ values, url }) => ({
                     want: cellText(values[Column.wantLevel]),
-                    ceiling: cellText(values[ceilingColumn]),
+                    prices: toPrices(values),
                     url: url ?? null,
                 }));
             row.catch(() => this.rows.delete(appId));
