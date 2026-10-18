@@ -29,10 +29,14 @@ const today = new Date(2026, 9, 17);
 const steamDbText = 'Lowest recorded price: NT$ 99';
 const steamDb = parseSteamDbPrices(steamDbText);
 
-/** Old row for the update case: placeholder price, an English-only mark, and a hand-typed feature description to keep. */
+/**
+ * Old row for the update case: placeholder price, a review score to mark when Steam has no reviews,
+ * an English-only mark, and a hand-typed feature description to keep.
+ */
 const oldRow: SheetRowValues = {
     [Column.originalPrice]: 10000,
     [Column.releaseDate]: '2020/1/1',
+    [Column.reviewScore]: 80,
     [Column.special]: '英',
     [Column.detail]: '手寫的遊戲特點。中位1H，3rd.高2H。',
 };

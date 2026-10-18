@@ -1,4 +1,4 @@
-import type { AppReviewsInfo, SteamSnapshot } from '@watchlist/steam-info-scraper';
+import type { AppReviewsInfo, ReleaseDate, SteamSnapshot } from '@watchlist/steam-info-scraper';
 
 import { Column, type CellValue, type ColumnName, type SheetRowValues } from './columns';
 import { formatReleaseDate, formatSheetDate, parseSheetDate } from './date';
@@ -43,6 +43,7 @@ export interface RefreshPlan {
 export const refreshReadColumns: readonly ColumnName[] = [
     Column.originalPrice,
     Column.releaseDate,
+    Column.reviewScore,
     Column.special,
     Column.detail,
 ];
@@ -69,6 +70,39 @@ const msPerDay = 24 * 60 * 60 * 1000;
  */
 export function reviewScore({ totalPositive, totalReviews }: AppReviewsInfo): number | null {
     return totalReviews > 0 ? Math.floor((totalPositive / totalReviews) * 100) : null;
+}
+
+/** Prefixed to a 評價度 backed by too few reviews, or not refreshed. */
+export const unreliableScorePrefix = '!';
+
+/** Fewer reviews than this mark 評價度 unreliable; `minReviewsAfterAYear` once the game is a year old. */
+const minReviews = 50;
+const minReviewsAfterAYear = 100;
+
+function isAYearOld(releaseDate: ReleaseDate | null, today: Date): boolean {
+    const date = releaseDate?.date;
+    return !!date && new Date(date.year + 1, date.month - 1, date.day) <= today;
+}
+
+/**
+ * The 評價度 cell (COLUMNS.md 評價度): `reviewScore`, prefixed with `unreliableScorePrefix`
+ * when too few reviews back it. Without reviews, an old plain number gets the prefix.
+ *
+ * @returns `null` to leave the cell alone.
+ */
+function planReviewScore(
+    reviews: AppReviewsInfo,
+    releaseDate: ReleaseDate | null,
+    oldValue: CellValue | undefined,
+    today: Date,
+): CellValue | null {
+    const score = reviewScore(reviews);
+    if (score === null) {
+        const old = String(oldValue ?? '').trim();
+        return /^\d+$/.test(old) ? `${unreliableScorePrefix}${old}` : null;
+    }
+    const required = isAYearOld(releaseDate, today) ? minReviewsAfterAYear : minReviews;
+    return reviews.totalReviews < required ? `${unreliableScorePrefix}${score}` : score;
 }
 
 function isBlank(value: CellValue | undefined): value is undefined {
@@ -134,6 +168,8 @@ export function formatPrice(price: number): number {
  * - Price (rounded), release date and review score are replaced when Steam has them, and
  *   left alone when it does not (e.g. no price before release). Price and date changes are
  *   reported, except replacing `unknownPricePlaceholder`.
+ * - The review score gets `unreliableScorePrefix` when too few reviews back it, and an old
+ *   number gets it when Steam has no reviews; see `planReviewScore`.
  * - The lowest discount is written only when `options.lowestOff` has one.
  * - The update date becomes `today`.
  * - The special cell gets its language mark and `Demo` tag refreshed; see `mergeSpecial`.
@@ -169,7 +205,7 @@ export function planRefresh(
         const change = releaseDateChange(oldRow[Column.releaseDate], releaseDate);
         if (change) changes.push(change);
     }
-    const score = reviewScore(reviews);
+    const score = planReviewScore(reviews, page.releaseDate, oldRow[Column.reviewScore], today);
     if (score !== null) {
         updates[Column.reviewScore] = score;
     }

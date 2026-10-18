@@ -10,6 +10,7 @@ import {
     mergeSpecial,
     planRefresh,
     type PlaytimeStats,
+    type SheetRowValues,
 } from '../src';
 
 const page: StorePageInfo = {
@@ -134,6 +135,41 @@ describe('planRefresh', () => {
                 [Column.detail]: 'TODO。26/03EA。中位125H，3rd.高725H。',
             },
             changes: [],
+        });
+    });
+
+    describe('review score (COLUMNS.md 評價度)', () => {
+        const withReviews = (totalReviews: number, releaseDate = page.releaseDate): SteamSnapshot => ({
+            page: { ...page, releaseDate },
+            reviews: { totalPositive: totalReviews, totalReviews, playtimeMinutes: [] },
+        });
+        const released = (year: number, month: number, day: number) =>
+            ({ text: `${year} 年 ${month} 月 ${day} 日`, date: { year, month, day } });
+        const score = (snapshot: SteamSnapshot, oldRow: SheetRowValues = {}) =>
+            planRefresh(snapshot, oldRow, today).updates[Column.reviewScore];
+
+        it('prefixes ! below 50 reviews', () => {
+            expect(score(withReviews(49))).toBe('!100');
+            expect(score(withReviews(50))).toBe(100);
+        });
+
+        it('prefixes ! below 100 reviews once the game is a year old', () => {
+            expect(score(withReviews(99, released(2025, 10, 17)))).toBe('!100');
+            expect(score(withReviews(100, released(2025, 10, 17)))).toBe(100);
+            expect(score(withReviews(99, released(2025, 10, 18)))).toBe(100);
+            expect(score(withReviews(99, { text: '2025 年第四季', date: null }))).toBe(100);
+        });
+
+        it('prefixes ! to an old number when Steam has no reviews, and leaves anything else alone', () => {
+            expect(score(withReviews(0), { [Column.reviewScore]: 80 })).toBe('!80');
+            expect(score(withReviews(0), { [Column.reviewScore]: '80' })).toBe('!80');
+            expect(score(withReviews(0), { [Column.reviewScore]: '!80' })).toBeUndefined();
+            expect(score(withReviews(0), { [Column.reviewScore]: '' })).toBeUndefined();
+            expect(score(withReviews(0))).toBeUndefined();
+        });
+
+        it('replaces an old ! score once enough reviews back it', () => {
+            expect(score(withReviews(50), { [Column.reviewScore]: '!80' })).toBe(100);
         });
     });
 
