@@ -69,10 +69,12 @@ describe('createSheetApi() single rows', () => {
 
         expect(await api.updateRow(570, { 原價: 0 })).toEqual({ row: 30 });
         expect(await api.appendRow(570, { 特: '英' })).toEqual({ row: 30 });
+        expect(await api.updateRowByNumber(12, 570, { '更新日': '2026/10/18' })).toEqual({ row: 30 });
 
         expect(postText.mock.calls).toEqual([
             [baseUrl, JSON.stringify({ action: 'update', appId: 570, values: { 原價: 0 } })],
             [baseUrl, JSON.stringify({ action: 'append', appId: 570, values: { 特: '英' } })],
+            [baseUrl, JSON.stringify({ action: 'update', appId: 570, values: { '更新日': '2026/10/18' }, row: 12 })],
         ]);
     });
 

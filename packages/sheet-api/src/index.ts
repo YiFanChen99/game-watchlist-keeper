@@ -92,6 +92,11 @@ export interface NumberedRowResponse extends RowResponse {
 export interface WriteRequest {
     action: 'update' | 'append';
     appId: number;
+    /**
+     * `update` only: write this 1-based row instead of looking `appId` up, refused unless the
+     * row's name still links `appId`.
+     */
+    row?: number;
     /** Keyed by header name; the web app refuses columns it does not allow writing. */
     values: RowValues;
 }
@@ -151,14 +156,18 @@ export interface SheetApi {
     readRow(appId: number, columns: readonly string[]): Promise<RowResponse>;
     /**
      * Read sheet row `row` (1-based), for a caller that knows the row but not its app id.
-     * Rejects with code `not-found` when its name links no app, and `duplicate` when an earlier
-     * row links the same app, since writes by app id would land on that earlier row.
+     * Rejects with code `not-found` when its name links no app.
      */
     readRowByNumber(row: number, columns: readonly string[]): Promise<NumberedRowResponse>;
     /** @returns The row with `appId`, or null. */
     findRow(appId: number): Promise<number | null>;
     /** Write only the given cells of the row with `appId`. */
     updateRow(appId: number, values: RowValues): Promise<WriteResponse>;
+    /**
+     * Write only the given cells of sheet row `row`, without looking `appId` up. Rejects with code
+     * `not-found` when the row's name no longer links `appId`, e.g. after rows moved.
+     */
+    updateRowByNumber(row: number, appId: number, values: RowValues): Promise<WriteResponse>;
     /** Add a row for `appId`; rejects with code `duplicate` when the sheet already has one. */
     appendRow(appId: number, values: RowValues): Promise<WriteResponse>;
 }
@@ -215,6 +224,7 @@ export function createSheetApi({ webAppUrl, token, fetchText, postText }: SheetA
         },
 
         updateRow: (appId, values) => write({ action: 'update', appId, values }),
+        updateRowByNumber: (row, appId, values) => write({ action: 'update', appId, values, row }),
         appendRow: (appId, values) => write({ action: 'append', appId, values }),
     };
     return api;

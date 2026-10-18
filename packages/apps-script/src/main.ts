@@ -160,24 +160,26 @@ function parseAppId(value: unknown): number {
     return appId;
 }
 
-/**
- * Sheet row `rowParam` and the app id its name links. Writes go by app id, so a row whose app
- * id an earlier row also links is refused: the write would land on that earlier row.
- */
-function resolveNumberedRow(context: SheetContext, rowParam: string): { row: number; appId: number } {
-    const row = Number(rowParam);
+function parseRow(context: SheetContext, value: unknown): number {
+    const row = Number(value);
     if (!Number.isSafeInteger(row) || row < firstDataRow || row > context.sheet.getLastRow()) {
-        throw new RequestError('invalid', `bad row ${rowParam}`);
+        throw new RequestError('invalid', `bad row ${String(value)}`);
     }
-    const appId = extractAppId(context.sheet.getRange(row, context.nameColumn + 1).getFormula());
-    if (appId === null) {
-        throw new RequestError('not-found', `row ${row} links no app`);
+    return row;
+}
+
+/** The app id the name of `row` links, read from that one cell; no index is needed. */
+function rowAppId(context: SheetContext, row: number): number | null {
+    return extractAppId(context.sheet.getRange(row, context.nameColumn + 1).getFormula());
+}
+
+/** For a write by row number: refuse a row that no longer links `appId`, e.g. after rows moved. */
+function requireLinkedRow(context: SheetContext, rowValue: unknown, appId: number): number {
+    const row = parseRow(context, rowValue);
+    if (rowAppId(context, row) !== appId) {
+        throw new RequestError('not-found', `row ${row} does not link app ${appId}`);
     }
-    const linked = findRow(context, appId) ?? scanRow(context, appId);
-    if (linked !== row) {
-        throw new RequestError('duplicate', `row ${linked} also links app ${appId}`);
-    }
-    return { row, appId };
+    return row;
 }
 
 /** The requested columns of `row`, and a link that selects it. */
@@ -198,7 +200,11 @@ function readRow(parameter: Record<string, string | undefined>): RowResponse | N
     const names = (parameter.columns ?? '').split(',').map(name => name.trim()).filter(Boolean);
     const context = openSheet();
     if (parameter.row !== undefined) {
-        const { row, appId } = resolveNumberedRow(context, parameter.row);
+        const row = parseRow(context, parameter.row);
+        const appId = rowAppId(context, row);
+        if (appId === null) {
+            throw new RequestError('not-found', `row ${row} links no app`);
+        }
         return { ...readCells(context, row, names), appId };
     }
     const row = requireRow(context, parseAppId(parameter.appId));
@@ -228,7 +234,12 @@ function parseWriteRequest(contents: string | undefined): WriteRequest {
         || typeof request.values !== 'object' || request.values === null) {
         throw new RequestError('invalid', 'body needs action and values');
     }
-    return { action: request.action, appId: parseAppId(request.appId), values: request.values };
+    return {
+        action: request.action,
+        appId: parseAppId(request.appId),
+        values: request.values,
+        ...(request.row === undefined ? {} : { row: request.row }),
+    };
 }
 
 /** One write at a time, so `append` cannot add the same game twice. */
@@ -240,7 +251,9 @@ function writeRow(request: WriteRequest): WriteResponse {
         const { sheet, lastColumn } = context;
         let row: number;
         if (request.action === 'update') {
-            row = requireRow(context, request.appId);
+            row = request.row === undefined
+                ? requireRow(context, request.appId)
+                : requireLinkedRow(context, request.row, request.appId);
             const rowFormulas = sheet.getRange(row, 1, 1, lastColumn).getFormulas()[0] ?? [];
             applyWrites(sheet, row, planUpdate(context.columns, request.values, rowFormulas));
         } else {
