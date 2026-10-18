@@ -2,7 +2,7 @@ import { createNameMatcher } from '@watchlist/core';
 
 import { PriceButton } from './priceButton';
 import { findAppId, RefreshButton, type OnRefreshed } from './refreshButton';
-import { RematchButton } from './rematchButton';
+import { ResyncButton } from './resyncButton';
 import type { SheetData, SheetGame } from './types';
 
 /**
@@ -63,9 +63,9 @@ const annotationClass = 'ekko-annotation';
 
 /**
  * Refetches the row of `appId`, or the whole sheet without one, then has
- * `HeaderModifier.useSheetData` and the page's modify run again.
+ * `HeaderModifier.useSheetData` and the page's modify run again, even when the refetch failed.
  */
-export type OnRematch = (appId: number | null) => Promise<void>;
+export type OnResync = (appId: number | null) => Promise<void>;
 
 /** The giveaway name a header shows; a long one is cut with `...`. */
 function headerName(headerElement: HTMLElement): string {
@@ -87,15 +87,15 @@ export class HeaderModifier {
     private gamesByAppId = new Map<number, SheetGame[]>();
     /** Created the first time a header shows a year mark, then reused so a busy one stays busy. */
     private readonly refreshButtons = new WeakMap<HTMLElement, RefreshButton>();
-    /** Created the first time a header matches no game, then reused like `refreshButtons`. */
-    private readonly rematchButtons = new WeakMap<HTMLElement, RematchButton>();
+    /** Created the first time a header is modified, then reused like `refreshButtons`. */
+    private readonly resyncButtons = new WeakMap<HTMLElement, ResyncButton>();
     /** Created the first time a header matches a game with an app id, then reused like `refreshButtons`. */
     private readonly priceButtons = new WeakMap<HTMLElement, PriceButton>();
 
     constructor(
         sheetData: SheetData,
         private readonly onRefreshed: OnRefreshed,
-        private readonly onRematch: OnRematch,
+        private readonly onResync: OnResync,
     ) {
         this.useSheetData(sheetData);
     }
@@ -156,8 +156,10 @@ export class HeaderModifier {
      * The want level gets a line magnifier inside it, e.g. `(W4🔍)`, when a matched game with an app id
      * has 購買/期待度 4 or 5: it shows those games' 目標價 and 最低$ from the sheet, e.g. `$50, 史$90`.
      *
-     * A header matching no game gets `(無⟲)` instead: ⟲ refetches the game's row (the whole sheet
-     * without an app id) and runs the match again, for a game just added or fixed in the sheet by hand.
+     * A header matching no game gets `(無)` instead.
+     *
+     * Every heading ends with a ⟲, after SteamGifts' own icons: it reads the game from the sheet again
+     * (see `resyncAppId`) and runs the match again, for a game just added or edited in the sheet by hand.
      * @returns Whether a game matched
      */
     private modify(headerElement: HTMLElement | null): boolean {
@@ -174,9 +176,11 @@ export class HeaderModifier {
             pointElement.append(annotation);
         }
 
+        this.addResyncButton(headerElement);
+
         const games = this.matchHeader(headerElement);
         if (!games.length) {
-            annotation.replaceChildren(' (無', this.rematchButtonFor(headerElement, annotation).button, ')');
+            annotation.replaceChildren(' (無)');
             return false;
         }
 
@@ -221,23 +225,36 @@ export class HeaderModifier {
         return price;
     }
 
-    /** The header's ⟲, its status put after `annotation`. */
-    private rematchButtonFor(headerElement: HTMLElement, annotation: HTMLElement): RematchButton {
-        let rematch = this.rematchButtons.get(headerElement);
-        if (!rematch) {
-            rematch = new RematchButton(async () => {
-                const appId = headerAppId(headerElement);
-                await this.onRematch(appId);
-                if (this.matchHeader(headerElement).length) {
-                    return null;
-                }
-                // The row was found (else `not-found`), but the dump leaves it out.
-                return appId === null ? '重抓 Sheet 後還是對不到這款遊戲。' : 'Sheet 裡這款遊戲的期待度是空白或 0，不標註。';
-            });
-            this.rematchButtons.set(headerElement, rematch);
-            annotation.after(rematch.status);
+    /**
+     * The app id whose row ⟲ refetches: the header's, unless its games matched by name only, which
+     * the row of that app id would not replace; null for those and a header without one, to refetch
+     * the whole sheet.
+     */
+    private resyncAppId(headerElement: HTMLElement): number | null {
+        const appId = headerAppId(headerElement);
+        if (appId === null || this.gamesByAppId.has(appId)) {
+            return appId;
         }
-        return rematch;
+        return this.matchGames(headerName(headerElement)).length ? null : appId;
+    }
+
+    /** Put the header's ⟲ and its status at the end of its heading, once. */
+    private addResyncButton(headerElement: HTMLElement): void {
+        const heading = headerElement.parentElement;
+        if (!heading || this.resyncButtons.has(headerElement)) {
+            return;
+        }
+        const resync = new ResyncButton(async () => {
+            const appId = this.resyncAppId(headerElement);
+            await this.onResync(appId);
+            if (this.matchHeader(headerElement).length) {
+                return null;
+            }
+            // The row was found (else `not-found`), but the dump leaves it out.
+            return appId === null ? '重抓 Sheet 後還是對不到這款遊戲。' : 'Sheet 裡這款遊戲的期待度是空白或 0，不標註。';
+        });
+        this.resyncButtons.set(headerElement, resync);
+        heading.append(resync.button, resync.status);
     }
 }
 

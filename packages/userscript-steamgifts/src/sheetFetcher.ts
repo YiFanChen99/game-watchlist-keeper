@@ -1,5 +1,5 @@
 import { Column, parseSheetDate } from '@watchlist/game-record-writer';
-import { toDumpRow } from '@watchlist/sheet-api';
+import { SheetApiError, toDumpRow, type RowValues } from '@watchlist/sheet-api';
 
 import { withSheetApi } from './tampermonkey';
 import type { SheetData } from './types';
@@ -61,14 +61,24 @@ const dumpRowColumns = [Column.name, Column.updatedOn, Column.wantLevel, Column.
 
 /**
  * Read only the sheet row of `appId`, put it in `data` in place of the games with that app id,
- * and save, so a game just fixed in the sheet need not refetch the whole sheet. The fetch time
+ * and save, so a game just edited in the sheet need not refetch the whole sheet. The fetch time
  * is kept, so the cache still expires on schedule. The row follows the dump's rules, so a want
  * level of blank or 0 leaves it out.
  *
- * Rejects with a `SheetApiError` of code `not-found` when no row links `appId`.
+ * Rejects with a `SheetApiError` of code `not-found` when no row links `appId`, after dropping
+ * the games with that app id from `data`.
  */
 export async function refetchGame(data: SheetData, appId: number): Promise<void> {
-    const { values } = await withSheetApi(api => api.readRow(appId, dumpRowColumns));
+    let values: RowValues;
+    try {
+        ({ values } = await withSheetApi(api => api.readRow(appId, dumpRowColumns)));
+    } catch (error) {
+        if (error instanceof SheetApiError && error.code === 'not-found') {
+            data.games = data.games.filter(old => old.appId !== appId);
+            saveData(data);
+        }
+        throw error;
+    }
     const updatedOn = parseSheetDate(values[Column.updatedOn] ?? '');
     const game = toDumpRow({
         name: values[Column.name],

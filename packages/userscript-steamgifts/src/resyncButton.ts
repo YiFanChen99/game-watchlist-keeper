@@ -6,17 +6,19 @@ import { createGlyphButton, StatusBubble } from './widgets';
  * Refetches the sheet and annotates the page again. Resolves to null when the heading matches
  * a game now, else to why not; rejects with a `SheetApiError` of code `not-found` when no row has the game.
  */
-export type Rematch = () => Promise<string | null>;
+export type Resync = () => Promise<string | null>;
 
 const glyph = '⟲';
 
-/** A ⟲ button plus its status bubble, for a giveaway heading no sheet game matched; the caller places both. */
-export class RematchButton {
-    readonly button = createGlyphButton(glyph, 'Sheet 裡對不到這款遊戲。補好 Sheet 後按這裡，重抓這款遊戲再比對一次');
+/** A ⟲ button plus its status bubble, for one giveaway heading; the caller places both. */
+export class ResyncButton {
+    readonly button = createGlyphButton(glyph, '重新讀 Sheet 裡這款遊戲，例如在 Sheet 改了期待度或補上這款遊戲之後');
     private readonly bubble = new StatusBubble();
     readonly status = this.bubble.element;
 
-    constructor(private readonly rematch: Rematch) {
+    constructor(private readonly resync: Resync) {
+        // Spaced like the heading's own icons, not tucked in parentheses as the other buttons are.
+        this.button.style.marginLeft = '8px';
         this.button.addEventListener('click', () => {
             void this.run();
         });
@@ -27,10 +29,8 @@ export class RematchButton {
         this.button.textContent = '…';
         this.bubble.show('', false);
         try {
-            const reason = await this.rematch();
-            if (reason) {
-                this.bubble.show(reason, false);
-            }
+            const reason = await this.resync();
+            this.bubble.show(reason ?? '已重新讀取。', false);
         } catch (error) {
             if (error instanceof SheetApiError && error.code === 'not-found') {
                 this.bubble.show('Sheet 沒有這個遊戲，要新增請到 Steam 商店頁。', false);

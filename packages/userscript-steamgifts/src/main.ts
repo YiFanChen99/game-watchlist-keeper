@@ -36,7 +36,7 @@ async function main(): Promise<void> {
             reannotate();
         }
     };
-    /** Refetch the whole sheet once for all ⟲ without an app id clicked meanwhile. */
+    /** Refetch the whole sheet once for all ⟲ refetching it clicked meanwhile. */
     let refetchingAll: Promise<void> | null = null;
     const refetchAll = () => {
         refetchingAll ??= fetchData()
@@ -49,12 +49,16 @@ async function main(): Promise<void> {
         return refetchingAll;
     };
     /** A ⟲ was clicked: refetch its game's row (the whole sheet without an app id), then annotate every header again. */
-    const onRematch = async (appId: number | null) => {
-        await (appId === null ? refetchAll() : refetchGame(sheetData, appId));
-        headerModifier.useSheetData(sheetData);
-        reannotate();
+    const onResync = async (appId: number | null) => {
+        try {
+            await (appId === null ? refetchAll() : refetchGame(sheetData, appId));
+        } finally {
+            // Also after `not-found`, which dropped the game from the cache.
+            headerModifier.useSheetData(sheetData);
+            reannotate();
+        }
     };
-    const headerModifier = new HeaderModifier(sheetData, onRefreshed, onRematch);
+    const headerModifier = new HeaderModifier(sheetData, onRefreshed, onResync);
     const regionModifier = new RegionModifier();
     if (isGiveawaysPage) {
         const count = headerModifier.modifyGiveaways();
