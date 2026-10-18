@@ -1,0 +1,20 @@
+{
+  "success": 1,
+  "query_summary": {
+    "num_reviews": 1,
+    "review_score": 8,
+    "review_score_desc": "Very Positive",
+    "total_positive": 60,
+    "total_negative": 7,
+    "total_reviews": 67
+  },
+  "reviews": [
+    {
+      "recommendationid": "236726884",
+      "voted_up": true,
+      "author": {
+        "playtime_forever": 143
+      }
+    }
+  ]
+}

@@ -55,6 +55,9 @@ export const refreshReadColumns: readonly ColumnName[] = [
  */
 export const unknownPricePlaceholder = 10000;
 
+/** 原價 and 最低off of a game the store page says is no longer sold on Steam. */
+export const delistedMark = '-';
+
 export interface RefreshOptions {
     /**
      * From `planLowestOff`, where the SteamDB block can be read (the Steam store page).
@@ -167,6 +170,15 @@ function detailChange(oldValue: CellValue | undefined, newValue: string): ValueC
     return { column: Column.detail, oldValue: oldPlaytime, newValue: newPlaytime, delta: null };
 }
 
+/** 原價 becoming `delistedMark`, against an old value that was a real price. */
+function delistedChange(oldValue: CellValue | undefined): ValueChange | null {
+    const old = String(oldValue ?? '').trim();
+    if (old === '' || old === delistedMark || Number(old) === unknownPricePlaceholder) {
+        return null;
+    }
+    return { column: Column.originalPrice, oldValue: oldValue ?? null, newValue: delistedMark, delta: null };
+}
+
 /** 原價 is a whole number of TWD. */
 export function formatPrice(price: number): number {
     return Math.round(price);
@@ -176,6 +188,8 @@ export function formatPrice(price: number): number {
  * Decide which cells of an existing row to write after fetching fresh Steam data.
  * The rules are listed in COLUMNS.md.
  *
+ * - A game no longer sold on Steam gets `delistedMark` as its price and lowest discount, and
+ *   the price change is reported.
  * - Price (rounded), release date and review score are replaced when Steam has them, and
  *   left alone when it does not (e.g. no price before release). Price and date changes are
  *   reported, except replacing `unknownPricePlaceholder`.
@@ -202,13 +216,17 @@ export function planRefresh(
     const updates: SheetRowValues = {};
     const changes: ValueChange[] = [];
 
-    if (page.originalPrice !== null) {
+    if (page.isDelisted) {
+        updates[Column.originalPrice] = delistedMark;
+        const change = delistedChange(oldRow[Column.originalPrice]);
+        if (change) changes.push(change);
+    } else if (page.originalPrice !== null) {
         const price = formatPrice(page.originalPrice);
         updates[Column.originalPrice] = price;
         const change = priceChange(oldRow[Column.originalPrice], price);
         if (change) changes.push(change);
     }
-    const lowestOff = options.lowestOff ?? markOutdated(oldRow[Column.lowestOff]);
+    const lowestOff = page.isDelisted ? delistedMark : options.lowestOff ?? markOutdated(oldRow[Column.lowestOff]);
     if (lowestOff !== null) {
         updates[Column.lowestOff] = lowestOff;
     }

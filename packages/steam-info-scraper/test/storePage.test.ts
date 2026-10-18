@@ -103,7 +103,20 @@ describe('parseStorePage', () => {
             hasDemo: false,
             interfaceLanguages: null,
             tags: [],
+            isDelisted: false,
         });
+    });
+
+    it('marks a page no longer sold on Steam, which shows no price or demo', () => {
+        expect(parseStorePage(loadStorePage(1860960))).toMatchObject({
+            name: '埃拉的呼喚',
+            originalPrice: null,
+            hasDemo: false,
+            isDelisted: true,
+        });
+        for (const appId of Object.keys(cases)) {
+            expect(parseStorePage(loadStorePage(Number(appId))).isDelisted).toBe(false);
+        }
     });
 
     it('lists only languages with a check mark in the interface column', () => {

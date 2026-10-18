@@ -1,7 +1,8 @@
 /**
  * Re-download the Steam fixtures under test/fixtures/.
  *
- * Usage: pnpm --filter @watchlist/steam-info-scraper fixtures
+ * Usage: pnpm --filter @watchlist/steam-info-scraper fixtures [appid ...]
+ * With app ids, only those are fetched, leaving the other fixtures as they are.
  *
  * Store pages are fetched as an anonymous tchinese/TW visitor. Appreviews
  * responses keep only the fields the parsers read, so the fixtures stay small
@@ -18,7 +19,15 @@ const apps = {
     1966720: 'Lethal Company: early access, English only',
     3669620: 'Warhammer Survivors: coming soon, no price, has a demo',
     570: 'Dota 2: free to play',
+    1860960: 'Eira: no longer sold on Steam, no price or demo shown',
 };
+
+const requested = process.argv.slice(2);
+for (const appId of requested) {
+    if (!(appId in apps)) {
+        throw new Error(`${appId} is not listed in apps`);
+    }
+}
 
 const headers = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130 Safari/537.36',
@@ -79,7 +88,7 @@ await mkdir(new URL('store/', dir), { recursive: true });
 await mkdir(new URL('appreviews/', dir), { recursive: true });
 await mkdir(new URL('reviewsummary/', dir), { recursive: true });
 
-for (const appId of Object.keys(apps)) {
+for (const appId of requested.length ? requested : Object.keys(apps)) {
     const html = await fetchText(`https://store.steampowered.com/app/${appId}/?l=tchinese&cc=tw`);
     await writeFile(new URL(`store/${appId}.html`, dir), html);
 

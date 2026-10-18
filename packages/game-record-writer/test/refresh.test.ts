@@ -12,6 +12,7 @@ import {
     type CellValue,
     type PlaytimeStats,
     type SheetRowValues,
+    unknownPricePlaceholder,
 } from '../src';
 
 const page: StorePageInfo = {
@@ -22,6 +23,7 @@ const page: StorePageInfo = {
     hasDemo: false,
     interfaceLanguages: ['簡體中文', '英文'],
     tags: [],
+    isDelisted: false,
 };
 const playtime: PlaytimeStats = { medianHours: 125, thirdHighestHours: 725 };
 const snapshot: SteamSnapshot = {
@@ -228,6 +230,19 @@ describe('planRefresh', () => {
         expect(planRefresh(snapshot, oldRow, today).changes).toEqual([
             { column: Column.releaseDate, oldValue: '2026 年第一季', newValue: '2026/3/5', delta: null },
         ]);
+    });
+
+    it('writes - as the price and lowest discount of a game no longer sold, reporting the price', () => {
+        const delisted: SteamSnapshot = { ...snapshot, page: { ...page, originalPrice: null, isDelisted: true } };
+
+        const { updates, changes } = planRefresh(delisted, { [Column.originalPrice]: 459, [Column.lowestOff]: 30 }, today, { lowestOff: 50 });
+
+        expect(updates).toMatchObject({ [Column.originalPrice]: '-', [Column.lowestOff]: '-' });
+        expect(changes).toContainEqual({ column: Column.originalPrice, oldValue: 459, newValue: '-', delta: null });
+        for (const old of ['-', unknownPricePlaceholder, '']) {
+            expect(planRefresh(delisted, { [Column.originalPrice]: old }, today).changes.map(change => change.column))
+                .not.toContain(Column.originalPrice);
+        }
     });
 
     it('writes the lowest discount when one is given, replacing an outdated one', () => {

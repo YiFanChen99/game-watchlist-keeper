@@ -66,6 +66,15 @@ describe('refreshGame', () => {
         expect(open).toEqual(fetched);
     });
 
+    it('writes - for a game no longer sold on Steam, keeping the other cells', async () => {
+        const { store, write } = fakeStore({ [Column.originalPrice]: 459, [Column.lowestOff]: 30, [Column.special]: '繁' });
+
+        const { changes } = await refreshGame(1860960, { fetchText: fixtureFetchText, store, now: () => new Date(2026, 9, 18) });
+
+        expect(write.mock.calls[0]![1]).toMatchObject({ [Column.originalPrice]: '-', [Column.lowestOff]: '-', [Column.special]: '繁' });
+        expect(changes).toContainEqual({ column: Column.originalPrice, oldValue: 459, newValue: '-', delta: null });
+    });
+
     it('writes nothing when a fetch fails', async () => {
         const { store, write } = fakeStore({});
         const failing = () => Promise.reject(new Error('offline'));

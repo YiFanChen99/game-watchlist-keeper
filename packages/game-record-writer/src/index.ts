@@ -12,6 +12,7 @@ export { defaultLowestOff, planLowestOff } from './lowestOff';
 export { buildDetail, extractPlaytime, formatPlaytime, mergeDetail } from './detail';
 export { mergeSpecial } from './special';
 export {
+    delistedMark,
     formatChange,
     formatPrice,
     planRefresh,

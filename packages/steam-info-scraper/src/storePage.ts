@@ -17,6 +17,11 @@ export interface StorePageInfo {
     interfaceLanguages: string[] | null;
     /** User-defined tags, most popular first. */
     tags: string[];
+    /**
+     * The page says the game is no longer sold on Steam (「…已不再於 Steam 商店中提供。」). Such a
+     * page has no purchase area: no price, and no demo either.
+     */
+    isDelisted: boolean;
 }
 
 function textOf(element: Element | null | undefined): string | null {
@@ -68,6 +73,10 @@ function parseInterfaceLanguages(doc: ParentNode): string[] | null {
     return supported;
 }
 
+function isDelisted(doc: ParentNode): boolean {
+    return textOf(doc.querySelector('#purchase_note'))?.includes('不再於 Steam 商店中提供') ?? false;
+}
+
 function parseTags(doc: ParentNode): string[] {
     const tags = Array.from(doc.querySelectorAll('.popular_tags a.app_tag'), textOf)
         .filter((tag): tag is string => tag !== null);
@@ -103,5 +112,6 @@ export function parseStorePage(doc: ParentNode): StorePageInfo {
         hasDemo: doc.querySelector('.demo_above_purchase, #demoGameBtn') !== null,
         interfaceLanguages: parseInterfaceLanguages(doc),
         tags: parseTags(doc),
+        isDelisted: isDelisted(doc),
     };
 }

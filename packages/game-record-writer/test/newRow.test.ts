@@ -47,6 +47,7 @@ describe('planNewRow', () => {
             hasDemo: false,
             interfaceLanguages: ['簡體中文'],
             tags: [],
+            isDelisted: false,
         },
         reviews: { totalPositive: 61, totalReviews: 100, playtimeMinutes: [1, 2, 3, 125, 725, 800, 900].map(hours => hours * 60) },
     };
