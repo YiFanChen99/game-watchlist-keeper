@@ -4,7 +4,7 @@
 [`test/__snapshots__/payloads.md`](test/__snapshots__/payloads.md) 的 diff 跟表一致。
 
 - 程式一律用**標題名稱**找欄位（第 1 列），欄字母只供對照，欄位被搬動也不影響。
-   - 所以改標題名稱前要先改程式。除了這份表管的寫入，`@watchlist/price-lookup` 也用名稱讀「最低$」「Ceiling」，`userscript-itad-mail` 讀「購買/期待度1~5」；標題對不上時，web app 會拒絕整個查詢（`invalid`）。
+   - 所以改標題名稱前要先改程式。除了這份表管的寫入，`@watchlist/price-lookup` 也用名稱讀「最低$」「目標價」，`userscript-itad-mail` 讀「購買/期待度1~5」；標題對不上時，web app 會拒絕整個查詢（`invalid`）。
 - 「Steam 來源」都是重新抓的 `?l=tchinese&cc=tw` 商店頁與全語言 appreviews，不受目前頁面語言影響。SteamDB 區塊只在 Steam 商店頁讀得到。
    - appreviews 分兩種請求：評論數（評價度用）和時長抽樣（備註用），參數見 [評價度](#評價度) 與 [備註](#備註)。
 
@@ -46,7 +46,7 @@
 | U | 已有序號 | | 使用者 | 不動 | 不動 | |
 | V |  （空白） | | | 不動 | 不動 | |
 | W | Regular | | 使用者 | 不動 | 不動 | |
-| X | Ceiling | 公式 | 依 AnyDeal、Regular、原價計算 | 必有，公式 | 不動 | |
+| X | 目標價 | 公式 | 依 AnyDeal、Regular、原價計算 | 必有，公式 | 不動 | |
 | Y |  （空白） | | | 不動 | 不動 | |
 | Z | 特賣 | | 使用者 | 不動 | 不動 | |
 | AA | 標準 | 公式 | 比較特賣與 AnyDeal | 必有，公式 | 不動 | |

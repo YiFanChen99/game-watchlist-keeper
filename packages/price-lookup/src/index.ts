@@ -1,11 +1,11 @@
 import { Column } from '@watchlist/game-record-writer';
 import type { RowValues, SheetApi } from '@watchlist/sheet-api';
 
-/** Header of the sheet's Ceiling column: the wanted price, a formula from AnyDeal, Regular and 原價. */
-export const ceilingColumn = 'Ceiling';
+/** Header of the sheet's 目標價 column: the wanted price, a formula from AnyDeal, Regular and 原價. */
+export const targetPriceColumn = '目標價';
 
 /** The columns `toPrices` reads; add them to a row read that wants other cells as well. */
-export const priceColumns: readonly string[] = [Column.lowestPrice, ceilingColumn];
+export const priceColumns: readonly string[] = [Column.lowestPrice, targetPriceColumn];
 
 /**
  * A game's prices from its sheet row, in TWD as the sheet computes them (maybe with decimals).
@@ -14,7 +14,7 @@ export const priceColumns: readonly string[] = [Column.lowestPrice, ceilingColum
 export interface Prices {
     /** 最低$: the lowest price seen, from 原價 and 最低off. */
     historicalLow: number | null;
-    /** Ceiling: the price the game is wanted at. */
+    /** 目標價: the price the game is wanted at. */
     wanted: number | null;
 }
 
@@ -31,7 +31,7 @@ function toPrice(value: string | number | undefined): number | null {
 export function toPrices(values: RowValues): Prices {
     return {
         historicalLow: toPrice(values[Column.lowestPrice]),
-        wanted: toPrice(values[ceilingColumn]),
+        wanted: toPrice(values[targetPriceColumn]),
     };
 }
 

@@ -5,7 +5,7 @@
 | `Prices` 欄位 | Sheet 欄 | 意思 |
 |---|---|---|
 | `historicalLow` | 最低$ | 史低價，Sheet 用原價和最低off 算出來（最低off 不是數字時是 `-`） |
-| `wanted` | Ceiling | 想要的價格，Sheet 用 AnyDeal、Regular、原價算出來 |
+| `wanted` | 目標價 | 想要的價格，Sheet 用 AnyDeal、Regular、原價算出來 |
 
 值是 Sheet 算出來的數字（可能有小數）；格子空白或不是數字（例如最低$ 的 `-`）時是 `null`。
 

@@ -30,7 +30,7 @@ export function findWaitlistGames(root: ParentNode): WaitlistGame[] {
 }
 
 /**
- * e.g. `W4 $50, 史$90`: the want level with its wanted price (Ceiling), then the historical low (最低$).
+ * e.g. `W4 $50, 史$90`: the want level with its wanted price (目標價), then the historical low (最低$).
  * A blank cell shows as `-`, prices that cannot be read as `?`.
  */
 function formatInfo({ want, prices }: GameInfo): string {
@@ -64,7 +64,7 @@ function createAnnotation(mark: HTMLElement): HTMLElement {
 }
 
 /**
- * Put the sheet's 購買/期待度, 最低$ and Ceiling after the game's `in Waitlist`, e.g.
+ * Put the sheet's 購買/期待度, 最低$ and 目標價 after the game's `in Waitlist`, e.g.
  * `in Waitlist (W4 $50, 史$90)`, linked to the game's sheet row; several matched rows are joined with ` / `.
  */
 export async function annotate({ link, mark }: WaitlistGame, lookup: SheetLookup): Promise<void> {

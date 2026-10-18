@@ -34,7 +34,7 @@ function createMagnifierIcon(): SVGSVGElement {
 }
 
 /**
- * e.g. `$50, 史$90`: the wanted price (Ceiling), then the historical low (最低$), as userscript-itad-mail
+ * e.g. `$50, 史$90`: the wanted price (目標價), then the historical low (最低$), as userscript-itad-mail
  * shows them after the want level, which is in the annotation already.
  */
 function formatPrices({ historicalLow, wanted }: Prices): string {
@@ -43,7 +43,7 @@ function formatPrices({ historicalLow, wanted }: Prices): string {
 
 /** A magnifier button plus its status bubble, for a giveaway heading worth a price check; the caller places both. */
 export class PriceButton {
-    readonly button = createGlyphButton('', '查 Sheet 裡這款遊戲想要的價格（Ceiling）與史低價（最低$）');
+    readonly button = createGlyphButton('', '查 Sheet 裡這款遊戲想要的價格（目標價）與史低價（最低$）');
     private readonly bubble = new StatusBubble();
     readonly status = this.bubble.element;
 

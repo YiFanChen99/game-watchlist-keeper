@@ -20,7 +20,7 @@ interface CachedDump {
 export interface GameInfo {
     /** 購買/期待度1~5 as the row has it; `''` when blank. */
     want: string;
-    /** 最低$ and Ceiling; null for a game without an app id, whose row cannot be read alone. */
+    /** 最低$ and 目標價; null for a game without an app id, whose row cannot be read alone. */
     prices: Prices | null;
     /** Opens the sheet at the game's row; null without an app id, or from a web app version without it. */
     url: string | null;

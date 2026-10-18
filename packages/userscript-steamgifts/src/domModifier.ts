@@ -154,7 +154,7 @@ export class HeaderModifier {
      * refresh drops the mark, and the ↻ with it.
      *
      * The want level gets a line magnifier inside it, e.g. `(W4🔍)`, when a matched game with an app id
-     * has 購買/期待度 4 or 5: it shows those games' Ceiling and 最低$ from the sheet, e.g. `$50, 史$90`.
+     * has 購買/期待度 4 or 5: it shows those games' 目標價 and 最低$ from the sheet, e.g. `$50, 史$90`.
      *
      * A header matching no game gets `(無⟲)` instead: ⟲ refetches the game's row (the whole sheet
      * without an app id) and runs the match again, for a game just added or fixed in the sheet by hand.

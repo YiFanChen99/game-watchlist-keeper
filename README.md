@@ -13,7 +13,7 @@ pnpm workspace monorepo，每個 `packages/*` 都是獨立的 node module，以 
 | `sheet-api` | library | Apps Script Web App 的 client |
 | `tampermonkey-sheet-api` | library | 給 userscript 用：`GM_xmlhttpRequest` 的 fetch 函式，以及 token 存在 Tampermonkey 的 `sheet-api` client |
 | `game-record-writer` | library | 新增 / 更新 Sheet 遊戲列的所有規則與流程；欄位對照表在它的 `COLUMNS.md` |
-| `price-lookup` | library | 用 AppID 讀 Sheet 的史低價（最低$）與想要的價格（Ceiling），回傳數字給 caller 組字 |
+| `price-lookup` | library | 用 AppID 讀 Sheet 的史低價（最低$）與想要的價格（目標價），回傳數字給 caller 組字 |
 | `apps-script` | Apps Script | Sheet 查詢 / 寫入的 Web App 原始碼 |
 | `userscript-steam` | userscript | Steam 商店頁：把遊戲新增到 Sheet，或更新它那一列 |
 | `userscript-steamgifts` | userscript | SteamGifts：想要程度標註、查價、區域限制計數、資料刷新 |
