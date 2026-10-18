@@ -1,5 +1,11 @@
-import { Column, formatChange, refreshGame, sheetApiRowStore } from '@watchlist/game-record-writer';
-import { SheetApiError } from '@watchlist/sheet-api';
+import {
+    Column,
+    formatChange,
+    refreshGame,
+    refreshReadColumns,
+    type SheetRowStore,
+} from '@watchlist/game-record-writer';
+import { SheetApiError, type NumberedRowResponse, type SheetApi } from '@watchlist/sheet-api';
 
 import { Panel } from './panel';
 import { parseSelectedRow, parseSheetLocation, type SheetLocation } from './selection';
@@ -30,15 +36,32 @@ function readSelectedRow(): number {
     return row;
 }
 
+/**
+ * The selected row as `refreshGame` reads and writes it, without the web app looking the app id up:
+ * the read is the one `target` already made, and the write goes to the row by number.
+ */
+function selectedRowStore(api: SheetApi, target: NumberedRowResponse): SheetRowStore {
+    return {
+        read: async (_appId, columns) => columns.every(column => column in target.values)
+            ? target.values
+            : (await api.readRowByNumber(target.row, columns)).values,
+        write: async (appId, values) => {
+            await api.updateRowByNumber(target.row, appId, values);
+        },
+        append: () => Promise.reject(new Error('Sheet 上只刷新已有的列')),
+    };
+}
+
 /** Refresh the selected row from Steam; 最低off is left alone, as Sheets has no SteamDB block. */
 async function refreshSelectedRow(page: SheetLocation): Promise<string> {
     const row = readSelectedRow();
     return withSheetApi(async (api) => {
         let target;
         try {
-            target = await api.readRowByNumber(row, [Column.name]);
+            // The columns the refresh reads come along, so it need not read the row again.
+            target = await api.readRowByNumber(row, [Column.name, ...refreshReadColumns]);
         } catch (error) {
-            throw describeRowError(error, row);
+            throw describeReadError(error, row);
         }
         // The web app always reads its own worksheet: make sure that is the one on screen.
         const written = parseSheetLocation(target.url);
@@ -46,23 +69,27 @@ async function refreshSelectedRow(page: SheetLocation): Promise<string> {
             throw new RefusalError('這裡不是遊戲清單的工作表，沒有更新。');
         }
         GM_setValue(spreadsheetIdKey, page.spreadsheetId);
-        const { changes } = await refreshGame(target.appId, { fetchText, store: sheetApiRowStore(api), parseHtml });
+        let changes;
+        try {
+            ({ changes } = await refreshGame(target.appId, { fetchText, store: selectedRowStore(api, target), parseHtml }));
+        } catch (error) {
+            if (error instanceof SheetApiError && error.code === 'not-found') {
+                throw new RefusalError(`第 ${row} 列已經不是這款遊戲（可能插入或刪除了列），沒有更新。`);
+            }
+            throw error;
+        }
         const name = String(target.values[Column.name] ?? '');
         return [`已更新第 ${row} 列 ${name}。`, ...changes.map(formatChange)].join('\n');
     });
 }
 
-function describeRowError(error: unknown, row: number): unknown {
+function describeReadError(error: unknown, row: number): unknown {
     if (!(error instanceof SheetApiError)) {
         return error;
     }
     switch (error.code) {
         case 'not-found':
             return new RefusalError(`第 ${row} 列的名稱沒有連到 Steam 商店頁，找不到 AppID。`);
-        case 'duplicate': {
-            const linked = /row (\d+)/.exec(error.message)?.[1];
-            return new RefusalError(`${linked ? `第 ${linked} 列` : '更前面的列'}也連到同一款遊戲，更新會寫到那一列，請先處理重複的列。`);
-        }
         case 'invalid':
             // Web app versions before the row-number lookup refuse it as a bad app id: keep their message.
             return error.message.includes('bad row') ? new RefusalError(`第 ${row} 列不是遊戲。`) : error;

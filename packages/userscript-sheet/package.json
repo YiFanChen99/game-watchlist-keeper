@@ -1,6 +1,6 @@
 {
   "name": "@watchlist/userscript-sheet",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "private": true,
   "description": "In the watchlist Google Sheet, refresh the selected game's row from Steam",
   "author": "YiFanChen99",

@@ -19,16 +19,16 @@
 流程：
 
 1. 讀左上角的名稱方塊（例如 `D123`、`A5:K5`、`5:5`）得到列號。選了好幾列、整欄或具名範圍時拒絕。
-2. 用 web app 的 `action=row&row=<列號>` 讀那一列，web app 從名稱欄的 HYPERLINK 取出 AppID。
+2. 用 web app 的 `action=row&row=<列號>` 讀那一列：web app 從名稱欄的 HYPERLINK 取出 AppID，並一起回傳刷新要用的舊值，之後不必再讀一次。
 3. 比對 web app 回傳的那一列連結（`url`）與目前頁面的試算表 id、工作表 `gid`，不同就拒絕。web app 永遠讀它自己的工作表，這一步避免在別的試算表或分頁上選了第 N 列，卻刷新了遊戲清單的第 N 列。
-4. 呼叫 `@watchlist/game-record-writer` 的 `refreshGame`，抓 Steam、與舊值整合後寫回。Sheet 上會即時看到新值。
+4. 呼叫 `@watchlist/game-record-writer` 的 `refreshGame`，抓 Steam、與舊值整合後，用列號寫回（POST 帶 `row`）。web app 只檢查那一列的名稱還連到同一個 AppID，不用 AppID 找列，所以讀和寫都不需要 AppID 索引，web app 請求總共 2 個。Sheet 上會即時看到新值。
 
 Google Sheets 的 CSP 要求 Trusted Types（`require-trusted-types-for 'script'`），`DOMParser` 不收一般字串，所以解析 Steam 商店頁時用腳本自己的 policy（`ekko-sheet-row-refresher`）把 HTML 包成 TrustedHTML（`src/trustedHtml.ts`）。CSP 沒有限制 policy 名稱，所以可以建；解析出的文件不會放進頁面，裡面的 script 也不會執行。
 
 拒絕的情況：
 
 - 名稱不是連到 Steam 商店頁的 HYPERLINK（沒有 AppID）。
-- 更前面還有別列連到同一個 AppID：寫入是用 AppID 找列，會寫到前面那一列。
+- 寫入時那一列已經不是同一款遊戲（例如刷新途中插入或刪除了列）。
 - 第 1 列（標題）或最後一列之後。
 
 ### 按鈕出現在哪裡
