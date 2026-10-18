@@ -14,7 +14,7 @@ export class Panel {
 
     constructor(onClick: () => void) {
         const area = document.createElement('div');
-        area.id = 'EkkoSheetRowRefresher';
+        area.id = 'EkkoSheetRowUpdater';
         Object.assign(area.style, {
             position: 'fixed', left: '6px', bottom: '48px', zIndex: '1000',
             display: 'flex', alignItems: 'flex-end', gap: '6px',

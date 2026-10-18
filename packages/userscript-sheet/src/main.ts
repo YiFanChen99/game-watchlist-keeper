@@ -105,7 +105,7 @@ async function refresh(panel: Panel, page: SheetLocation): Promise<void> {
         panel.showMessage(await refreshSelectedRow(page), false);
     } catch (error) {
         if (!(error instanceof RefusalError)) {
-            console.error('Sheet Row Refresher:', error);
+            console.error('Sheet Row Updater:', error);
         }
         panel.showMessage(error instanceof Error ? error.message : String(error), true);
     } finally {

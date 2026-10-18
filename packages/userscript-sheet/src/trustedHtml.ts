@@ -17,7 +17,7 @@ let policy: TrustedHtmlPolicy | undefined;
  */
 export function parseHtml(html: string): Document {
     const factory = (window as { trustedTypes?: TrustedTypePolicyFactory }).trustedTypes;
-    policy ??= factory?.createPolicy('ekko-sheet-row-refresher', { createHTML: input => input });
+    policy ??= factory?.createPolicy('ekko-sheet-row-updater', { createHTML: input => input });
     // Typed as a string only because TypeScript's DOM types lack TrustedHTML.
     const trusted = (policy?.createHTML(html) ?? html) as string;
     return new DOMParser().parseFromString(trusted, 'text/html');
