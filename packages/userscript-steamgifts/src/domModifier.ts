@@ -41,8 +41,9 @@ function isMostWanted(game: SheetGame): boolean {
 }
 
 /**
- * Whether ↻ may refresh this game's row: not when its 購買/期待度 is 4 or 5. A defence for now,
- * because 目前評價 cannot be updated yet.
+ * Whether ↻ may refresh this game's row: not when its 購買/期待度 is 4 or 5. A defence for now:
+ * a refresh here cannot fetch 最低off, which SteamGifts pages have no SteamDB block for, so it would
+ * only mark the most wanted games' 最低off as outdated.
  */
 function isRefreshable(game: SheetGame): boolean {
     return !isMostWanted(game);
