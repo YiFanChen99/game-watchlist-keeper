@@ -24,6 +24,8 @@ export interface GameInfo {
     want: string;
     /** Ceiling as the row has it; null for a game without an app id, whose row cannot be read alone. */
     ceiling: string | null;
+    /** Opens the sheet at the game's row; null without an app id, or from a web app version without it. */
+    url: string | null;
 }
 
 /** The dump's games, cached for a day in Tampermonkey storage (not Gmail's localStorage). */
@@ -64,18 +66,19 @@ export class SheetLookup {
         return (await this.matcher)(name);
     }
 
-    /** The row's 購買/期待度 and Ceiling; a game without an app id gets the dump's want level only. */
+    /** The row's 購買/期待度, Ceiling and link; a game without an app id gets the dump's want level only. */
     info(game: SheetDumpRow): Promise<GameInfo> {
         const { appId } = game;
         if (appId === undefined) {
-            return Promise.resolve({ want: cellText(game.K), ceiling: null });
+            return Promise.resolve({ want: cellText(game.K), ceiling: null, url: null });
         }
         let row = this.rows.get(appId);
         if (!row) {
             row = withSheetApi(api => api.readRow(appId, [Column.wantLevel, ceilingColumn]))
-                .then(({ values }) => ({
+                .then(({ values, url }) => ({
                     want: cellText(values[Column.wantLevel]),
                     ceiling: cellText(values[ceilingColumn]),
+                    url: url ?? null,
                 }));
             row.catch(() => this.rows.delete(appId));
             this.rows.set(appId, row);

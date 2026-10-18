@@ -27,9 +27,27 @@ export function findWaitlistGames(root: ParentNode): WaitlistGame[] {
     return games;
 }
 
-/** e.g. `W4, Ceiling 300`; a blank cell shows as `-`. */
+/** e.g. `W4, $300`; a blank cell shows as `-`, a Ceiling that cannot be read as `?`. */
 function formatInfo({ want, ceiling }: GameInfo): string {
-    return `W${want || '-'}, Ceiling ${ceiling === null ? '?' : ceiling || '-'}`;
+    return `W${want || '-'}, $${ceiling === null ? '?' : ceiling || '-'}`;
+}
+
+/** One matched game: a link to its sheet row when there is one, else plain text. */
+function renderInfo(info: GameInfo, sheetName: string): Node {
+    if (!info.url) {
+        const text = document.createElement('span');
+        text.textContent = formatInfo(info);
+        text.title = sheetName;
+        return text;
+    }
+    const link = document.createElement('a');
+    link.href = info.url;
+    link.target = '_blank';
+    link.rel = 'noopener';
+    link.textContent = formatInfo(info);
+    link.title = `${sheetName}\n點一下開啟 Sheet 的這一列`;
+    Object.assign(link.style, { color: 'inherit', textDecoration: 'underline' });
+    return link;
 }
 
 function createAnnotation(mark: HTMLElement): HTMLElement {
@@ -41,13 +59,13 @@ function createAnnotation(mark: HTMLElement): HTMLElement {
 
 /**
  * Put the sheet's 購買/期待度 and Ceiling after the game's `in Waitlist`, e.g.
- * `in Waitlist (W4, Ceiling 300)`; several matched rows are joined with ` / `.
+ * `in Waitlist (W4, $300)`, linked to the game's sheet row; several matched rows are joined with ` / `.
  */
 export async function annotate({ link, mark }: WaitlistGame, lookup: SheetLookup): Promise<void> {
     link.setAttribute(doneAttribute, '');
     const annotation = createAnnotation(mark);
-    const show = (text: string, title = '') => {
-        annotation.textContent = ` (${text})`;
+    const show = (content: string | Node[], title = '') => {
+        annotation.replaceChildren(' (', ...(typeof content === 'string' ? [content] : content), ')');
         annotation.title = title;
     };
 
@@ -63,7 +81,10 @@ export async function annotate({ link, mark }: WaitlistGame, lookup: SheetLookup
             return;
         }
         const infos = await Promise.all(games.map(game => lookup.info(game)));
-        show(infos.map(formatInfo).join(' / '), games.map(game => game.B).join('\n'));
+        show(infos.flatMap((info, index) => [
+            ...(index ? [document.createTextNode(' / ')] : []),
+            renderInfo(info, games[index]?.B ?? ''),
+        ]));
     } catch (error) {
         console.error('ITAD Mail Annotator:', error);
         show('讀取失敗', error instanceof Error ? error.message : String(error));
