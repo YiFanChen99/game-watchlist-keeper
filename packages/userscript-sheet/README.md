@@ -23,6 +23,8 @@
 3. 比對 web app 回傳的那一列連結（`url`）與目前頁面的試算表 id、工作表 `gid`，不同就拒絕。web app 永遠讀它自己的工作表，這一步避免在別的試算表或分頁上選了第 N 列，卻刷新了遊戲清單的第 N 列。
 4. 呼叫 `@watchlist/game-record-writer` 的 `refreshGame`，抓 Steam、與舊值整合後寫回。Sheet 上會即時看到新值。
 
+Google Sheets 的 CSP 要求 Trusted Types（`require-trusted-types-for 'script'`），`DOMParser` 不收一般字串，所以解析 Steam 商店頁時用腳本自己的 policy（`ekko-sheet-row-refresher`）把 HTML 包成 TrustedHTML（`src/trustedHtml.ts`）。CSP 沒有限制 policy 名稱，所以可以建；解析出的文件不會放進頁面，裡面的 script 也不會執行。
+
 拒絕的情況：
 
 - 名稱不是連到 Steam 商店頁的 HYPERLINK（沒有 AppID）。

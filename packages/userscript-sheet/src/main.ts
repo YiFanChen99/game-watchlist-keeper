@@ -4,6 +4,7 @@ import { SheetApiError } from '@watchlist/sheet-api';
 import { Panel } from './panel';
 import { parseSelectedRow, parseSheetLocation, type SheetLocation } from './selection';
 import { fetchText, withSheetApi } from './tampermonkey';
+import { parseHtml } from './trustedHtml';
 
 /**
  * Tampermonkey storage keys:
@@ -45,7 +46,7 @@ async function refreshSelectedRow(page: SheetLocation): Promise<string> {
             throw new RefusalError('這裡不是遊戲清單的工作表，沒有更新。');
         }
         GM_setValue(spreadsheetIdKey, page.spreadsheetId);
-        const { changes } = await refreshGame(target.appId, { fetchText, store: sheetApiRowStore(api) });
+        const { changes } = await refreshGame(target.appId, { fetchText, store: sheetApiRowStore(api), parseHtml });
         const name = String(target.values[Column.name] ?? '');
         return [`已更新第 ${row} 列 ${name}。`, ...changes.map(formatChange)].join('\n');
     });
