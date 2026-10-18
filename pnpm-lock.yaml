@@ -125,7 +125,24 @@ importers:
         specifier: ^0.25.0
         version: 0.25.12
 
-  packages/userscript-sheet: {}
+  packages/userscript-sheet:
+    dependencies:
+      '@watchlist/game-record-writer':
+        specifier: workspace:*
+        version: link:../game-record-writer
+      '@watchlist/sheet-api':
+        specifier: workspace:*
+        version: link:../sheet-api
+      '@watchlist/tampermonkey-sheet-api':
+        specifier: workspace:*
+        version: link:../tampermonkey-sheet-api
+    devDependencies:
+      '@types/tampermonkey':
+        specifier: ^5.0.4
+        version: 5.5.0
+      esbuild:
+        specifier: ^0.25.0
+        version: 0.25.12
 
   packages/userscript-steam:
     dependencies:
