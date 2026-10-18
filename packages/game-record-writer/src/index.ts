@@ -7,7 +7,7 @@ export {
     type SheetRowValues,
 } from './columns';
 export { formatReleaseDate, formatSheetDate, parseSheetDate } from './date';
-export { computePlaytimeStats, type PlaytimeStats } from './playtime';
+export { computePlaytimeStats, playtimePercentRank, type PlaytimeStats } from './playtime';
 export { defaultLowestOff, planLowestOff } from './lowestOff';
 export { buildDetail, extractPlaytime, formatPlaytime, mergeDetail } from './detail';
 export { mergeSpecial } from './special';

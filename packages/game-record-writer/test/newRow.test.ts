@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import type { SteamSnapshot } from '@watchlist/steam-info-scraper';
 
 import { buildNameFormula, Column, MissingValueError, planLowestOff, planNewRow } from '../src';
+import { percentRank, playtimeSample } from './playtimeSample';
 
 describe('planLowestOff (COLUMNS.md 最低off)', () => {
     it('turns the lowest price into a discount off the original price', () => {
@@ -49,7 +50,7 @@ describe('planNewRow', () => {
             tags: [],
             isDelisted: false,
         },
-        reviews: { totalPositive: 61, totalReviews: 100, playtimeMinutes: [1, 2, 3, 125, 725, 800, 900].map(hours => hours * 60) },
+        reviews: { totalPositive: 61, totalReviews: 100, playtimeMinutes: playtimeSample },
     };
     const today = new Date(2026, 9, 17);
 
@@ -64,7 +65,7 @@ describe('planNewRow', () => {
             [Column.wantLevel]: '?',
             [Column.mode]: 'TODO',
             [Column.special]: '簡',
-            [Column.detail]: 'TODO。26/03EA。中位125H，3rd.高725H。',
+            [Column.detail]: `TODO。26/03EA。中位125H，${percentRank} 725H。`,
         });
     });
 

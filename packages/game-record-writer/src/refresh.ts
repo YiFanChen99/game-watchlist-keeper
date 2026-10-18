@@ -24,7 +24,7 @@ export interface ValueChange {
  * The line a userscript shows for one change.
  *
  * @returns e.g. `原價 459 → 499（+40）`, `上市 2026/2/26 → 2026/3/5（+7 天）` or
- *   `備註 中位1H，3rd.高2H。 → 中位33H，3rd.高145H。`.
+ *   `備註 中位1H，3rd.高2H。 → 中位33H，PR84 60H。`.
  */
 export function formatChange({ column, oldValue, newValue, delta }: ValueChange): string {
     const unit = column === Column.releaseDate ? ' 天' : '';

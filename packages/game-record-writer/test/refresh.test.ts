@@ -14,6 +14,7 @@ import {
     type SheetRowValues,
     unknownPricePlaceholder,
 } from '../src';
+import { otherPercentRank, percentRank, playtimeSample } from './playtimeSample';
 
 const page: StorePageInfo = {
     name: 'Slay the Spire 2',
@@ -25,56 +26,63 @@ const page: StorePageInfo = {
     tags: [],
     isDelisted: false,
 };
-const playtime: PlaytimeStats = { medianHours: 125, thirdHighestHours: 725 };
+const playtime: PlaytimeStats = { medianHours: 125, percentRankHours: 725 };
 const snapshot: SteamSnapshot = {
     page,
-    reviews: { totalPositive: 61, totalReviews: 100, playtimeMinutes: [1, 2, 3, 125, 725, 800, 900].map(hours => hours * 60) },
+    reviews: { totalPositive: 61, totalReviews: 100, playtimeMinutes: playtimeSample },
 };
 const today = new Date(2026, 9, 17);
 
 describe('buildDetail (COLUMNS.md 備註：新增)', () => {
     it('writes YY/MMEA。 for early access, then the playtime', () => {
-        expect(buildDetail(page, playtime)).toBe('TODO。26/03EA。中位125H，3rd.高725H。');
+        expect(buildDetail(page, playtime)).toBe(`TODO。26/03EA。中位125H，${percentRank} 725H。`);
     });
 
     it('keeps Steam text as the early access date when it is not a full date', () => {
         const vague: StorePageInfo = { ...page, releaseDate: { text: '2026 年第四季', date: null } };
-        expect(buildDetail(vague, playtime)).toBe('TODO。2026 年第四季EA。中位125H，3rd.高725H。');
+        expect(buildDetail(vague, playtime)).toBe(`TODO。2026 年第四季EA。中位125H，${percentRank} 725H。`);
     });
 
     it('omits the early access part and marks unknown numbers', () => {
         const released: StorePageInfo = { ...page, isEarlyAccess: false };
-        expect(buildDetail(released, { medianHours: 3, thirdHighestHours: null })).toBe('TODO。中位3H，3rd.高-H。');
-        expect(buildDetail(released, { medianHours: null, thirdHighestHours: null })).toBe('TODO。中位-H，3rd.高-H。');
+        expect(buildDetail(released, { medianHours: 3, percentRankHours: null })).toBe(`TODO。中位3H，${percentRank} -H。`);
+        expect(buildDetail(released, { medianHours: null, percentRankHours: null })).toBe(`TODO。中位-H，${percentRank} -H。`);
     });
 });
 
 describe('mergeDetail (COLUMNS.md 備註：更新)', () => {
-    it('replaces only the playtime part, keeping everything else', () => {
+    it('replaces only the playtime part, keeping everything else, from the older 3rd.高 format too', () => {
         expect(mergeDetail('Roguelike 牌組構築。26/03EA。中位40H，3rd.高300H。等正式版', playtime))
-            .toBe('Roguelike 牌組構築。26/03EA。中位125H，3rd.高725H。等正式版');
+            .toBe(`Roguelike 牌組構築。26/03EA。中位125H，${percentRank} 725H。等正式版`);
+    });
+
+    it('replaces a playtime part in the PR format, written with any percent rank', () => {
+        expect(mergeDetail(`好玩。中位40H，${percentRank} 300H。等正式版`, playtime)).toBe(`好玩。中位125H，${percentRank} 725H。等正式版`);
+        expect(mergeDetail(`好玩。中位40H，${otherPercentRank} 300H。等正式版`, playtime)).toBe(`好玩。中位125H，${percentRank} 725H。等正式版`);
     });
 
     it('replaces NaN values left by the legacy scraper', () => {
-        expect(mergeDetail('英。中位NaNH，3rd.高NaNH。', playtime)).toBe('英。中位125H，3rd.高725H。');
+        expect(mergeDetail('英。中位NaNH，3rd.高NaNH。', playtime)).toBe(`英。中位125H，${percentRank} 725H。`);
     });
 
     it('appends playtime when the cell has none', () => {
-        expect(mergeDetail('等正式版。', playtime)).toBe('等正式版。中位125H，3rd.高725H。');
+        expect(mergeDetail('等正式版。', playtime)).toBe(`等正式版。中位125H，${percentRank} 725H。`);
     });
 
     it('separates an appended playtime with 。 unless the cell ends with a full-width symbol', () => {
-        expect(mergeDetail('等正式版', playtime)).toBe('等正式版。中位125H，3rd.高725H。');
-        expect(mergeDetail('Roguelike', playtime)).toBe('Roguelike。中位125H，3rd.高725H。');
-        expect(mergeDetail('好玩!', playtime)).toBe('好玩!。中位125H，3rd.高725H。');
-        expect(mergeDetail('好玩！', playtime)).toBe('好玩！中位125H，3rd.高725H。');
-        expect(mergeDetail('（等正式版）', playtime)).toBe('（等正式版）中位125H，3rd.高725H。');
-        expect(mergeDetail('', playtime)).toBe('中位125H，3rd.高725H。');
+        expect(mergeDetail('等正式版', playtime)).toBe(`等正式版。中位125H，${percentRank} 725H。`);
+        expect(mergeDetail('Roguelike', playtime)).toBe(`Roguelike。中位125H，${percentRank} 725H。`);
+        expect(mergeDetail('好玩!', playtime)).toBe(`好玩!。中位125H，${percentRank} 725H。`);
+        expect(mergeDetail('好玩！', playtime)).toBe(`好玩！中位125H，${percentRank} 725H。`);
+        expect(mergeDetail('（等正式版）', playtime)).toBe(`（等正式版）中位125H，${percentRank} 725H。`);
+        expect(mergeDetail('', playtime)).toBe(`中位125H，${percentRank} 725H。`);
     });
 });
 
 describe('extractPlaytime', () => {
     it('finds the playtime part among hand-written notes', () => {
+        expect(extractPlaytime(`好玩。26/03EA。中位40H，${percentRank} 300H。等正式版`)).toBe(`中位40H，${percentRank} 300H。`);
+        expect(extractPlaytime(`好玩。中位40H，${otherPercentRank} 300H。`)).toBe(`中位40H，${otherPercentRank} 300H。`);
         expect(extractPlaytime('好玩。26/03EA。中位40H，3rd.高300H。等正式版')).toBe('中位40H，3rd.高300H。');
         expect(extractPlaytime('英。中位NaNH，3rd.高NaNH。')).toBe('中位NaNH，3rd.高NaNH。');
     });
@@ -126,7 +134,7 @@ describe('planRefresh', () => {
             [Column.originalPrice]: 499,
             [Column.releaseDate]: '2026/3/5',
             [Column.special]: '簡',
-            [Column.detail]: 'TODO。26/03EA。中位125H，3rd.高725H。',
+            [Column.detail]: `TODO。26/03EA。中位125H，${percentRank} 725H。`,
         };
         expect(planRefresh(snapshot, oldRow, today)).toEqual({
             updates: {
@@ -135,7 +143,7 @@ describe('planRefresh', () => {
                 [Column.reviewScore]: 61,
                 [Column.updatedOn]: '2026/10/17',
                 [Column.special]: '簡',
-                [Column.detail]: 'TODO。26/03EA。中位125H，3rd.高725H。',
+                [Column.detail]: `TODO。26/03EA。中位125H，${percentRank} 725H。`,
             },
             changes: [],
         });
@@ -186,7 +194,7 @@ describe('planRefresh', () => {
 
         expect(planRefresh(snapshot, oldRow, today).changes).toEqual([
             { column: Column.special, oldValue: '英 Demo', newValue: '簡', delta: null },
-            { column: Column.detail, oldValue: '中位40H，3rd.高300H。', newValue: '中位125H，3rd.高725H。', delta: null },
+            { column: Column.detail, oldValue: '中位40H，3rd.高300H。', newValue: `中位125H，${percentRank} 725H。`, delta: null },
         ]);
     });
 
@@ -194,20 +202,29 @@ describe('planRefresh', () => {
         const oldRow = { [Column.detail]: '等正式版。' };
 
         expect(planRefresh(snapshot, oldRow, today).changes).toEqual([
-            { column: Column.detail, oldValue: null, newValue: '中位125H，3rd.高725H。', delta: null },
+            { column: Column.detail, oldValue: null, newValue: `中位125H，${percentRank} 725H。`, delta: null },
         ]);
     });
 
     it('does not report a detail cell whose playtime is unchanged', () => {
-        const oldRow = { [Column.detail]: '好玩。中位125H，3rd.高725H。' };
+        const oldRow = { [Column.detail]: `好玩。中位125H，${percentRank} 725H。` };
         expect(planRefresh(snapshot, oldRow, today).changes).toEqual([]);
+    });
+
+    it.each(['3rd.高', `${otherPercentRank} `])('reports a %s part as changed even with the same numbers, and rewrites it', (label) => {
+        const { updates, changes } = planRefresh(snapshot, { [Column.detail]: `好玩。中位125H，${label}725H。` }, today);
+
+        expect(updates[Column.detail]).toBe(`好玩。中位125H，${percentRank} 725H。`);
+        expect(changes).toEqual([
+            { column: Column.detail, oldValue: `中位125H，${label}725H。`, newValue: `中位125H，${percentRank} 725H。`, delta: null },
+        ]);
     });
 
     it('fills blank cells without reporting them as changes', () => {
         const { updates, changes } = planRefresh(snapshot, { [Column.detail]: '  ' }, today);
 
         expect(updates[Column.special]).toBe('簡');
-        expect(updates[Column.detail]).toBe('TODO。26/03EA。中位125H，3rd.高725H。');
+        expect(updates[Column.detail]).toBe(`TODO。26/03EA。中位125H，${percentRank} 725H。`);
         expect(changes).toEqual([]);
     });
 
@@ -290,7 +307,7 @@ describe('formatChange', () => {
 
     it('omits a missing delta and marks a missing old value', () => {
         expect(formatChange({ column: Column.special, oldValue: '英', newValue: '簡 Demo', delta: null })).toBe('特 英 → 簡 Demo');
-        expect(formatChange({ column: Column.detail, oldValue: null, newValue: '中位3H，3rd.高-H。', delta: null }))
-            .toBe('備註 （無） → 中位3H，3rd.高-H。');
+        expect(formatChange({ column: Column.detail, oldValue: null, newValue: `中位3H，${percentRank} -H。`, delta: null }))
+            .toBe(`備註 （無） → 中位3H，${percentRank} -H。`);
     });
 });

@@ -91,7 +91,7 @@ export async function addGame(appId: number, deps: RefreshDeps): Promise<SheetRo
 /**
  * Only the playtime part of 備註, from a fresh review sample; nothing is read or written in the sheet.
  *
- * @returns e.g. `中位12H，3rd.高85H。`
+ * @returns e.g. `中位12H，PR84 30H。`
  */
 export async function fetchPlaytime(appId: number, fetchText: FetchText): Promise<string> {
     return formatPlaytime(computePlaytimeStats(await fetchPlaytimeSample(appId, fetchText)));

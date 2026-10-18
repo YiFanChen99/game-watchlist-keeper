@@ -22,7 +22,7 @@ export const Column = {
     mode: '模式',
     /** Space-separated tags: the language mark, `Demo`, and any hand-written ones. */
     special: '特',
-    /** `[<date>EA。]中位<n>H，3rd.高<n>H。` plus any hand-written notes. */
+    /** `[<date>EA。]中位<n>H，PR84 <n>H。` plus any hand-written notes. */
     detail: '備註',
 } as const;
 

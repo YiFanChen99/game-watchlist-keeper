@@ -45,7 +45,7 @@ describe('refreshGame', () => {
             [Column.updatedOn]: '2026/10/17',
             [Column.special]: '簡',
         });
-        expect(updates[Column.detail]).toMatch(/^手寫的遊戲特點。26\/03EA。中位\d+H，3rd\.高\d+H。$/);
+        expect(updates[Column.detail]).toMatch(/^手寫的遊戲特點。26\/03EA。中位\d+H，PR\d+ \d+H。$/);
         expect(changes.map(change => change.column)).toEqual([Column.originalPrice, Column.special, Column.detail]);
         expect(changes[0]).toEqual({ column: Column.originalPrice, oldValue: 459, newValue: 499, delta: 40 });
     });
@@ -134,6 +134,6 @@ describe('fetchPlaytime', () => {
         expect(fetchText.mock.calls.every(([url]) => url.includes('/appreviews/'))).toBe(true);
         const { updates } = await refreshGame(2868840, { fetchText: fixtureFetchText, store: fakeStore({}).store });
         expect(playtime).toBe(extractPlaytime(String(updates[Column.detail])));
-        expect(playtime).toMatch(/^中位\d+H，3rd\.高\d+H。$/);
+        expect(playtime).toMatch(/^中位\d+H，PR\d+ \d+H。$/);
     });
 });

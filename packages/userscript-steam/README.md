@@ -7,7 +7,7 @@
 - Sheet 還沒有這個 AppID：顯示 **＋ 新增**，寫成新的一列。
 - Sheet 已經有了：顯示 **↻ 更新**，刷新那一列的 Steam 資料，並列出原價 / 上市日期的變動。
 
-右邊另有一顆較窄的 **時長** 按鈕：只抓遊戲時長（`中位nH，3rd.高nH。`，跟備註裡的那段一樣），複製到剪貼簿，不碰 Sheet，也不需要 token。
+右邊另有一顆較窄的 **時長** 按鈕：只抓遊戲時長（`中位nH，PR84 nH。`，跟備註裡的那段一樣），複製到剪貼簿，不碰 Sheet，也不需要 token。
 
 取代舊的 [tampermonkey--steam-info-scraper](https://github.com/YiFanChen99/tampermonkey--steam-info-scraper)（擷取後貼到剪貼簿），不用再手動貼上。
 
