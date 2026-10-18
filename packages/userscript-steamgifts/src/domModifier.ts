@@ -158,8 +158,8 @@ export class HeaderModifier {
      *
      * A header matching no game gets `(無)` instead.
      *
-     * Every heading ends with a ⟲, after SteamGifts' own icons: it reads the game from the sheet again
-     * (see `resyncAppId`) and runs the match again, for a game just added or edited in the sheet by hand.
+     * Every annotation ends with a ⟲, e.g. `(W4) (Y19↻) ⟲` or `(無) ⟲`: it reads the game from the sheet
+     * again (see `resyncAppId`) and runs the match again, for a game just added or edited in the sheet by hand.
      * @returns Whether a game matched
      */
     private modify(headerElement: HTMLElement | null): boolean {
@@ -176,11 +176,11 @@ export class HeaderModifier {
             pointElement.append(annotation);
         }
 
-        this.addResyncButton(headerElement);
+        const resync = this.resyncButtonFor(headerElement, annotation);
 
         const games = this.matchHeader(headerElement);
         if (!games.length) {
-            annotation.replaceChildren(' (無)');
+            annotation.replaceChildren(' (無) ', resync.button);
             return false;
         }
 
@@ -195,6 +195,8 @@ export class HeaderModifier {
             ...(price ? [price.button] : []),
             ')',
             ...(year ? [` (${year}`, ...(refresh ? [refresh.button] : []), ')'] : []),
+            ' ',
+            resync.button,
         );
         return true;
     }
@@ -238,23 +240,23 @@ export class HeaderModifier {
         return this.matchGames(headerName(headerElement)).length ? null : appId;
     }
 
-    /** Put the header's ⟲ and its status at the end of its heading, once. */
-    private addResyncButton(headerElement: HTMLElement): void {
-        const heading = headerElement.parentElement;
-        if (!heading || this.resyncButtons.has(headerElement)) {
-            return;
+    /** The header's ⟲, its status put after `annotation`. */
+    private resyncButtonFor(headerElement: HTMLElement, annotation: HTMLElement): ResyncButton {
+        let resync = this.resyncButtons.get(headerElement);
+        if (!resync) {
+            resync = new ResyncButton(async () => {
+                const appId = this.resyncAppId(headerElement);
+                await this.onResync(appId);
+                if (this.matchHeader(headerElement).length) {
+                    return null;
+                }
+                // The row was found (else `not-found`), but the dump leaves it out.
+                return appId === null ? '重抓 Sheet 後還是對不到這款遊戲。' : 'Sheet 裡這款遊戲的期待度是空白或 0，不標註。';
+            });
+            this.resyncButtons.set(headerElement, resync);
+            annotation.after(resync.status);
         }
-        const resync = new ResyncButton(async () => {
-            const appId = this.resyncAppId(headerElement);
-            await this.onResync(appId);
-            if (this.matchHeader(headerElement).length) {
-                return null;
-            }
-            // The row was found (else `not-found`), but the dump leaves it out.
-            return appId === null ? '重抓 Sheet 後還是對不到這款遊戲。' : 'Sheet 裡這款遊戲的期待度是空白或 0，不標註。';
-        });
-        this.resyncButtons.set(headerElement, resync);
-        heading.append(resync.button, resync.status);
+        return resync;
     }
 }
 

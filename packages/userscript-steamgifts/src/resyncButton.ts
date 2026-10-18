@@ -17,8 +17,6 @@ export class ResyncButton {
     readonly status = this.bubble.element;
 
     constructor(private readonly resync: Resync) {
-        // Spaced like the heading's own icons, not tucked in parentheses as the other buttons are.
-        this.button.style.marginLeft = '8px';
         this.button.addEventListener('click', () => {
             void this.run();
         });
