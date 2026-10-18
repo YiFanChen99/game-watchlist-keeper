@@ -66,7 +66,14 @@ importers:
         specifier: workspace:*
         version: link:../steam-info-scraper
 
-  packages/price-lookup: {}
+  packages/price-lookup:
+    dependencies:
+      '@watchlist/game-record-writer':
+        specifier: workspace:*
+        version: link:../game-record-writer
+      '@watchlist/sheet-api':
+        specifier: workspace:*
+        version: link:../sheet-api
 
   packages/sheet-api:
     dependencies:
@@ -101,6 +108,9 @@ importers:
       '@watchlist/game-record-writer':
         specifier: workspace:*
         version: link:../game-record-writer
+      '@watchlist/price-lookup':
+        specifier: workspace:*
+        version: link:../price-lookup
       '@watchlist/sheet-api':
         specifier: workspace:*
         version: link:../sheet-api
@@ -150,6 +160,9 @@ importers:
       '@watchlist/game-record-writer':
         specifier: workspace:*
         version: link:../game-record-writer
+      '@watchlist/price-lookup':
+        specifier: workspace:*
+        version: link:../price-lookup
       '@watchlist/sheet-api':
         specifier: workspace:*
         version: link:../sheet-api

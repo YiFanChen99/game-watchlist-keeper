@@ -1,8 +1,8 @@
 {
   "name": "@watchlist/userscript-steamgifts",
-  "version": "2.5.0",
+  "version": "2.6.0",
   "private": true,
-  "description": "Annotate SteamGifts giveaways with wishlist rating (from Google Sheet) and region-restriction count, and refresh a game's sheet row from Steam",
+  "description": "Annotate SteamGifts giveaways with wishlist rating (from Google Sheet) and region-restriction count, show a game's sheet prices on request, and refresh a game's sheet row from Steam",
   "author": "YiFanChen99",
   "license": "MIT",
   "type": "module",
@@ -17,6 +17,7 @@
   "dependencies": {
     "@watchlist/core": "workspace:*",
     "@watchlist/game-record-writer": "workspace:*",
+    "@watchlist/price-lookup": "workspace:*",
     "@watchlist/sheet-api": "workspace:*",
     "@watchlist/tampermonkey-sheet-api": "workspace:*"
   }

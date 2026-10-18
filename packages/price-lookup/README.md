@@ -16,6 +16,6 @@
 各 caller 的組法：
 
 - itad-mail：`W4 $50, 史$90`（期待度後面接想要的價格，再接史低價）。
-- steamgifts：`史$90, W$50`（期待度已經在標註裡）。
+- steamgifts：`$50, 史$90`（期待度已經在標註裡，其餘跟 itad-mail 相同）。
 
 名稱比對不在這裡：兩支 userscript 各自用整表傾印把名稱對到 AppID。

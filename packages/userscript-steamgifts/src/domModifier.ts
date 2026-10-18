@@ -1,5 +1,6 @@
 import { createNameMatcher } from '@watchlist/core';
 
+import { PriceButton } from './priceButton';
 import { findAppId, RefreshButton, type OnRefreshed } from './refreshButton';
 import { RematchButton } from './rematchButton';
 import type { SheetData, SheetGame } from './types';
@@ -42,6 +43,11 @@ function isRefreshable(game: SheetGame): boolean {
     return !['4', '5'].includes(String(game.K).trim());
 }
 
+/** The distinct app ids of `games`; a sheet name without a HYPERLINK has none. */
+function appIdsOf(games: SheetGame[]): number[] {
+    return [...new Set(games.flatMap(game => (game.appId === undefined ? [] : [game.appId])))];
+}
+
 /** The span holding a header's annotation, so it can be replaced. */
 const annotationClass = 'ekko-annotation';
 
@@ -73,6 +79,8 @@ export class HeaderModifier {
     private readonly refreshButtons = new WeakMap<HTMLElement, RefreshButton>();
     /** Created the first time a header matches no game, then reused like `refreshButtons`. */
     private readonly rematchButtons = new WeakMap<HTMLElement, RematchButton>();
+    /** Created the first time a header matches a game with an app id, then reused like `refreshButtons`. */
+    private readonly priceButtons = new WeakMap<HTMLElement, PriceButton>();
 
     constructor(
         sheetData: SheetData,
@@ -135,6 +143,9 @@ export class HeaderModifier {
      * app id (a bundle's `sub/` link has none) and no matched game has 購買/期待度 4 or 5. The
      * refresh drops the mark, and the ↻ with it.
      *
+     * The want level gets a $ inside it, e.g. `(W4$)`, when a matched game has an app id: it shows the
+     * games' 最低$ and Ceiling from the sheet, e.g. `$50, 史$90`.
+     *
      * A header matching no game gets `(無⟲)` instead: ⟲ refetches the game's row (the whole sheet
      * without an app id) and runs the match again, for a game just added or fixed in the sheet by hand.
      * @returns Whether a game matched
@@ -164,8 +175,11 @@ export class HeaderModifier {
         const refresh = year && games.every(isRefreshable)
             ? this.refreshButtonFor(headerElement, annotation)
             : undefined;
+        const price = appIdsOf(games).length ? this.priceButtonFor(headerElement, annotation) : undefined;
         annotation.replaceChildren(
-            ` (${want})`,
+            ` (${want}`,
+            ...(price ? [price.button] : []),
+            ')',
             ...(year ? [` (${year}`, ...(refresh ? [refresh.button] : []), ')'] : []),
         );
         return true;
@@ -184,6 +198,17 @@ export class HeaderModifier {
             annotation.after(refresh.status);
         }
         return refresh;
+    }
+
+    /** The header's $, its status put after `annotation`. */
+    private priceButtonFor(headerElement: HTMLElement, annotation: HTMLElement): PriceButton {
+        let price = this.priceButtons.get(headerElement);
+        if (!price) {
+            price = new PriceButton(() => appIdsOf(this.matchHeader(headerElement)));
+            this.priceButtons.set(headerElement, price);
+            annotation.after(price.status);
+        }
+        return price;
     }
 
     /** The header's ⟲, its status put after `annotation`. */
