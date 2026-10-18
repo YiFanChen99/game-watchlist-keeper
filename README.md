@@ -34,7 +34,3 @@ pnpm -r build   # 產出各 userscript 的 dist/
 push 到 `main` 後由 `.github/workflows/pages.yml` 建置，將每支 userscript 發佈到 GitHub Pages 的 `/<網站>/Script.user.js`。
 
 `pnpm prune-pages [N]` 刪掉舊的 Pages deployment 與 workflow run，各留最新 N 筆，預設 10（需先 `gh auth login`）。
-
-## Legacy
-
-- `google_sheet_b1_d3.js`：以 Google Sheets API + OAuth token 讀取 B1:D3 的實驗腳本。**目前沒有任何 package 用到**（新架構改走 Apps Script Web App）。
