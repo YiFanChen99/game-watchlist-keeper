@@ -1,6 +1,6 @@
 {
   "name": "@watchlist/userscript-steamgifts",
-  "version": "2.11.0",
+  "version": "2.12.0",
   "private": true,
   "description": "Annotate SteamGifts giveaways with wishlist rating (from Google Sheet) and region-restriction count, show a game's sheet prices on request, and refresh a game's sheet row from Steam",
   "author": "YiFanChen99",

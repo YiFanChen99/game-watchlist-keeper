@@ -9,21 +9,39 @@ export function storePageFetchUrl(appId: number): string {
 export const reviewSampleSize = 40;
 
 /**
- * Day ranges the playtime sample tries in turn: the store page's own 30 days, then the widest
- * the API takes, when 30 days hold fewer than `reviewSampleSize` reviews.
+ * Share of `reviewSampleSize` a playtime sample needs to be kept; a smaller one moves on to the
+ * next of `reviewSampleQueries`.
  */
-export const reviewSampleDayRanges: readonly number[] = [30, 365];
+export const reviewSampleMinimumRatio = 0.8;
 
 /**
- * The store page's own review query (most helpful within `dayRange` days, review quality on,
- * off-topic activity kept), except for every language instead of the visitor's. Every parameter
+ * Which reviews one playtime sample request takes: the most helpful within `dayRange` days, or
+ * the most recently written of all time.
+ */
+export type ReviewSampleQuery = { filter: 'all'; dayRange: number } | { filter: 'recent' };
+
+/**
+ * Queries the playtime sample tries in turn: the store page's own 30 days, then the widest
+ * `dayRange` the API takes, then the most recent reviews, which reach past a year for a game
+ * with only a few reviews in it. Steam already widens `dayRange` to all time when it holds no
+ * review at all; with a few, it returns just those.
+ */
+export const reviewSampleQueries: readonly ReviewSampleQuery[] = [
+    { filter: 'all', dayRange: 30 },
+    { filter: 'all', dayRange: 365 },
+    { filter: 'recent' },
+];
+
+/**
+ * The store page's own review query (review quality on, off-topic activity kept), except for
+ * every language instead of the visitor's and `sampleQuery` for which reviews. Every parameter
  * is spelled out so a Steam default change cannot move the sample.
  */
-export function appReviewsUrl(appId: number, dayRange = reviewSampleDayRanges[0]!): string {
+export function appReviewsUrl(appId: number, sampleQuery = reviewSampleQueries[0]!): string {
     const query = new URLSearchParams({
         json: '1',
-        filter: 'all',
-        day_range: String(dayRange),
+        filter: sampleQuery.filter,
+        ...(sampleQuery.filter === 'all' ? { day_range: String(sampleQuery.dayRange) } : {}),
         language: 'all',
         review_type: 'all',
         purchase_type: 'all',

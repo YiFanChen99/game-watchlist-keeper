@@ -2,7 +2,14 @@ import type { FetchText } from '@watchlist/core';
 
 import { parseReviewSample, parseReviewSummary, type AppReviewsInfo } from './appReviews';
 import { matchesFetchedStorePage, parseStorePage, type StorePageInfo } from './storePage';
-import { appReviewsUrl, reviewSampleDayRanges, reviewSampleSize, reviewSummaryUrl, storePageFetchUrl } from './urls';
+import {
+    appReviewsUrl,
+    reviewSampleMinimumRatio,
+    reviewSampleQueries,
+    reviewSampleSize,
+    reviewSummaryUrl,
+    storePageFetchUrl,
+} from './urls';
 
 /** Everything fetched from Steam for one app. */
 export interface SteamSnapshot {
@@ -15,17 +22,17 @@ export type ParseHtml = (html: string) => Document;
 const parseWithDomParser: ParseHtml = html => new DOMParser().parseFromString(html, 'text/html');
 
 /**
- * Each sampled reviewer's total playtime, in minutes: the first day range holding a full sample,
- * else the largest one found.
+ * Each sampled reviewer's total playtime, in minutes: the first of `reviewSampleQueries` holding
+ * at least `reviewSampleMinimumRatio` of `reviewSampleSize`, else the largest sample found.
  */
 export async function fetchPlaytimeSample(appId: number, fetchText: FetchText): Promise<number[]> {
     let sample: number[] = [];
-    for (const dayRange of reviewSampleDayRanges) {
-        const minutes = parseReviewSample(await fetchText(appReviewsUrl(appId, dayRange)));
+    for (const sampleQuery of reviewSampleQueries) {
+        const minutes = parseReviewSample(await fetchText(appReviewsUrl(appId, sampleQuery)));
         if (minutes.length > sample.length) {
             sample = minutes;
         }
-        if (sample.length >= reviewSampleSize) {
+        if (sample.length >= reviewSampleSize * reviewSampleMinimumRatio) {
             break;
         }
     }

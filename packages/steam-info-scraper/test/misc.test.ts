@@ -46,14 +46,18 @@ describe('SteamDB block', () => {
 });
 
 describe('fetchSteamSnapshot', () => {
-    /** Serves `appId`'s fixtures; the sample request of each day range gets `sample(dayRange)` reviewers. */
-    function fakeFetch(appId: number, sample?: (dayRange: number) => number) {
+    /**
+     * Serves `appId`'s fixtures; each sample request gets `sample(query)` reviewers, `query` being
+     * its day range (`'30'`, `'365'`) or `'recent'`.
+     */
+    function fakeFetch(appId: number, sample?: (query: string) => number) {
         return vi.fn((url: string) => {
             const params = new URL(url).searchParams;
             if (!url.includes('/appreviews/')) return Promise.resolve(loadStorePageHtml(appId));
             if (params.get('num_per_page') === '0') return Promise.resolve(loadReviewSummaryJson(appId));
             if (!sample) return Promise.resolve(loadAppReviewsJson(appId));
-            const reviews = Array.from({ length: sample(Number(params.get('day_range'))) }, () => ({ author: { playtime_forever: 60 } }));
+            const query = params.get('filter') === 'recent' ? 'recent' : params.get('day_range')!;
+            const reviews = Array.from({ length: sample(query) }, () => ({ author: { playtime_forever: 60 } }));
             return Promise.resolve(JSON.stringify({ success: 1, query_summary: { total_positive: 0, total_reviews: 0 }, reviews }));
         });
     }
@@ -102,26 +106,43 @@ describe('fetchSteamSnapshot', () => {
         expect(snapshot.reviews).toMatchObject({ totalPositive: 2251569, totalReviews: 2799392 });
     });
 
-    it('samples 365 days when 30 days hold fewer than 40 reviews', async () => {
-        const fetchText = fakeFetch(1145360, dayRange => (dayRange === 30 ? 23 : 40));
+    const sampleSizes = (sizes: Record<string, number>) => (query: string) => sizes[query]!;
+    const last30Days = { filter: 'all', dayRange: 30 } as const;
+    const lastYear = { filter: 'all', dayRange: 365 } as const;
+    const recent = { filter: 'recent' } as const;
+
+    it('stops at 30 days when they hold 80% of the sample', async () => {
+        const fetchText = fakeFetch(1145360, () => 32);
 
         const snapshot = await fetchSteamSnapshot(1145360, fetchText);
 
-        expect(urls(fetchText)).toEqual(expect.arrayContaining([appReviewsUrl(1145360, 30), appReviewsUrl(1145360, 365)]));
+        expect(urls(fetchText)).not.toContain(appReviewsUrl(1145360, lastYear));
+        expect(snapshot.reviews.playtimeMinutes).toHaveLength(32);
+    });
+
+    it('samples 365 days when 30 days hold less than 80% of the sample', async () => {
+        const fetchText = fakeFetch(1145360, query => (query === '30' ? 31 : 40));
+
+        const snapshot = await fetchSteamSnapshot(1145360, fetchText);
+
+        expect(urls(fetchText)).toEqual(expect.arrayContaining([appReviewsUrl(1145360, last30Days), appReviewsUrl(1145360, lastYear)]));
+        expect(urls(fetchText)).not.toContain(appReviewsUrl(1145360, recent));
         expect(snapshot.reviews.playtimeMinutes).toHaveLength(40);
     });
 
-    it('keeps the larger sample when 365 days do not fill it either', async () => {
-        const snapshot = await fetchSteamSnapshot(1145360, fakeFetch(1145360, dayRange => (dayRange === 30 ? 3 : 12)));
+    it('samples the most recent reviews when 365 days hold less than 80% of the sample', async () => {
+        const fetchText = fakeFetch(1145360, sampleSizes({ 30: 1, 365: 7, recent: 40 }));
 
-        expect(snapshot.reviews.playtimeMinutes).toHaveLength(12);
+        const snapshot = await fetchSteamSnapshot(1145360, fetchText);
+
+        expect(urls(fetchText)).toContain(appReviewsUrl(1145360, recent));
+        expect(appReviewsUrl(1145360, recent)).not.toContain('day_range');
+        expect(snapshot.reviews.playtimeMinutes).toHaveLength(40);
     });
 
-    it('stops at 30 days when they fill the sample', async () => {
-        const fetchText = fakeFetch(1145360, () => 40);
+    it('keeps the largest sample when none holds 80% of it', async () => {
+        const snapshot = await fetchSteamSnapshot(1145360, fakeFetch(1145360, sampleSizes({ 30: 3, 365: 12, recent: 10 })));
 
-        await fetchSteamSnapshot(1145360, fetchText);
-
-        expect(urls(fetchText)).not.toContain(appReviewsUrl(1145360, 365));
+        expect(snapshot.reviews.playtimeMinutes).toHaveLength(12);
     });
 });

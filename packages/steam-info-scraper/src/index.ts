@@ -1,10 +1,12 @@
 export {
     appReviewsUrl,
-    reviewSampleDayRanges,
+    reviewSampleMinimumRatio,
+    reviewSampleQueries,
     reviewSampleSize,
     reviewSummaryUrl,
     storePageFetchUrl,
     type ReviewPurchaseType,
+    type ReviewSampleQuery,
 } from './urls';
 export { parseReleaseDate, type CalendarDate, type ReleaseDate } from './releaseDate';
 export { matchesFetchedStorePage, parseStorePage, type StorePageInfo } from './storePage';
