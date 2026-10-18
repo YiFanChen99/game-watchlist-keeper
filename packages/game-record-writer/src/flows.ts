@@ -48,6 +48,11 @@ export interface RefreshDeps {
      * Refresh: null or absent leaves 最低off alone. Add: null writes `defaultLowestOff` (0).
      */
     steamDb?: SteamDbPrices | null;
+    /**
+     * The app's store page, when the caller is on it (userscript-steam): parsed instead of
+     * fetched when it reads the same as a fetched one (`matchesFetchedStorePage`: 繁中, TWD).
+     */
+    openStorePage?: Document;
 }
 
 /**
@@ -57,7 +62,7 @@ export interface RefreshDeps {
  */
 export async function refreshGame(appId: number, deps: RefreshDeps): Promise<RefreshPlan> {
     const [snapshot, oldRow] = await Promise.all([
-        fetchSteamSnapshot(appId, deps.fetchText, deps.parseHtml),
+        fetchSteamSnapshot(appId, deps.fetchText, deps.parseHtml, deps.openStorePage),
         deps.store.read(appId, refreshReadColumns),
     ]);
     const lowestOff = deps.steamDb == null ? null : planLowestOff(deps.steamDb, snapshot.page.originalPrice);
@@ -72,7 +77,7 @@ export async function refreshGame(appId: number, deps: RefreshDeps): Promise<Ref
  * @returns The written cells.
  */
 export async function addGame(appId: number, deps: RefreshDeps): Promise<SheetRowValues> {
-    const snapshot = await fetchSteamSnapshot(appId, deps.fetchText, deps.parseHtml);
+    const snapshot = await fetchSteamSnapshot(appId, deps.fetchText, deps.parseHtml, deps.openStorePage);
     const row = planNewRow({
         appId,
         snapshot,

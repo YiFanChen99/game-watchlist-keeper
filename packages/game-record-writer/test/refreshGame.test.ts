@@ -1,7 +1,7 @@
 import type { SheetApi } from '@watchlist/sheet-api';
 import { describe, expect, it, vi } from 'vitest';
 
-import { fixtureFetchText } from '../../steam-info-scraper/test/fixtures';
+import { fixtureFetchText, loadStorePage } from '../../steam-info-scraper/test/fixtures';
 import {
     addGame,
     Column,
@@ -48,6 +48,22 @@ describe('refreshGame', () => {
         expect(updates[Column.detail]).toMatch(/^手寫的遊戲特點。26\/03EA。中位\d+H，3rd\.高\d+H。$/);
         expect(changes.map(change => change.column)).toEqual([Column.originalPrice, Column.special, Column.detail]);
         expect(changes[0]).toEqual({ column: Column.originalPrice, oldValue: 459, newValue: 499, delta: 40 });
+    });
+
+    it('uses the open store page instead of fetching it, with the same result', async () => {
+        const row = { [Column.originalPrice]: 459, [Column.special]: '英' };
+        const fetched = await refreshGame(2868840, { fetchText: fixtureFetchText, store: fakeStore(row).store, now: () => new Date(2026, 9, 17) });
+        const fetchText = vi.fn(fixtureFetchText);
+
+        const open = await refreshGame(2868840, {
+            fetchText,
+            store: fakeStore(row).store,
+            now: () => new Date(2026, 9, 17),
+            openStorePage: loadStorePage(2868840),
+        });
+
+        expect(fetchText.mock.calls.map(([url]) => url)).not.toContainEqual(expect.stringContaining('/app/2868840/'));
+        expect(open).toEqual(fetched);
     });
 
     it('writes nothing when a fetch fails', async () => {

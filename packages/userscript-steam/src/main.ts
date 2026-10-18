@@ -66,7 +66,7 @@ function main(): void {
         // Read on click: the SteamDB extension fills its block in after the page loads.
         const steamDb = readSteamDbPrices(document);
         try {
-            await withApi(api => addGame(appId!, { fetchText, store: sheetApiRowStore(api), steamDb }));
+            await withApi(api => addGame(appId!, { fetchText, store: sheetApiRowStore(api), steamDb, openStorePage: document }));
         } catch (error) {
             if (error instanceof MissingValueError) {
                 // Retrying will not help; the page lacks the value. Keep it shown: nothing was added.
@@ -89,7 +89,7 @@ function main(): void {
         const steamDb = readSteamDbPrices(document);
         try {
             const { changes } = await withApi(api =>
-                refreshGame(appId!, { fetchText, store: sheetApiRowStore(api), steamDb }));
+                refreshGame(appId!, { fetchText, store: sheetApiRowStore(api), steamDb, openStorePage: document }));
             const lines = ['已更新。', ...changes.map(formatChange), ...(steamDb === null ? [noSteamDbNote] : [])];
             panel.setState({ kind: 'update' }, lines.join('\n'));
         } catch (error) {

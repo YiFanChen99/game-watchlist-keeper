@@ -75,7 +75,21 @@ function parseTags(doc: ParentNode): string[] {
 }
 
 /**
- * Parse a store page fetched with `l=tchinese` (see `storePageFetchUrl`).
+ * Whether a store page the user has open reads the same as one fetched with `storePageFetchUrl`:
+ * in 繁中 (`<html lang="zh-tw">`) and priced in TWD, which `parseStorePage` relies on. A page
+ * without a price states no currency, and has none to misread.
+ */
+export function matchesFetchedStorePage(doc: Document): boolean {
+    if (doc.documentElement.lang.toLowerCase() !== 'zh-tw') {
+        return false;
+    }
+    const currency = doc.querySelector('meta[itemprop="priceCurrency"]')?.getAttribute('content');
+    return currency === 'TWD' || (currency == null && parseOriginalPrice(doc) === null);
+}
+
+/**
+ * Parse a store page fetched with `l=tchinese` (see `storePageFetchUrl`), or an open one that
+ * `matchesFetchedStorePage`.
  *
  * Review scores are deliberately absent: the page only shows reviews in the visitor's
  * language. Use `parseAppReviews` instead.

@@ -1,7 +1,7 @@
 import type { FetchText } from '@watchlist/core';
 
 import { parseReviewSample, parseReviewSummary, type AppReviewsInfo } from './appReviews';
-import { parseStorePage, type StorePageInfo } from './storePage';
+import { matchesFetchedStorePage, parseStorePage, type StorePageInfo } from './storePage';
 import { appReviewsUrl, reviewSampleDayRanges, reviewSampleSize, reviewSummaryUrl, storePageFetchUrl } from './urls';
 
 /** Everything fetched from Steam for one app. */
@@ -38,13 +38,18 @@ export async function fetchPlaytimeSample(appId: number, fetchText: FetchText): 
  * whether the game is free (see `ReviewPurchaseType`).
  *
  * @param parseHtml Defaults to the browser's `DOMParser`.
+ * @param openPage `appId`'s store page the user has open: parsed instead of fetching the page
+ *   when it `matchesFetchedStorePage`.
  */
 export async function fetchSteamSnapshot(
     appId: number,
     fetchText: FetchText,
     parseHtml: ParseHtml = parseWithDomParser,
+    openPage?: Document,
 ): Promise<SteamSnapshot> {
-    const pagePromise = fetchText(storePageFetchUrl(appId)).then(html => parseStorePage(parseHtml(html)));
+    const pagePromise = openPage && matchesFetchedStorePage(openPage)
+        ? Promise.resolve(parseStorePage(openPage))
+        : fetchText(storePageFetchUrl(appId)).then(html => parseStorePage(parseHtml(html)));
     const summaryPromise = pagePromise.then(async page =>
         parseReviewSummary(await fetchText(reviewSummaryUrl(appId, page.originalPrice === 0 ? 'all' : 'steam'))));
     const [page, summary, playtimeMinutes] = await Promise.all([

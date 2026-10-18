@@ -9,7 +9,7 @@ import {
     reviewSummaryUrl,
     storePageFetchUrl,
 } from '../src';
-import { loadAppReviewsJson, loadReviewSummaryJson, loadStorePageHtml } from './fixtures';
+import { loadAppReviewsJson, loadReviewSummaryJson, loadStorePage, loadStorePageHtml } from './fixtures';
 
 describe('parseReleaseDate', () => {
     it.each([
@@ -72,6 +72,25 @@ describe('fetchSteamSnapshot', () => {
         expect(snapshot.page).toMatchObject({ name: 'Slay the Spire 2', originalPrice: 499, isEarlyAccess: true });
         expect(snapshot.reviews).toMatchObject({ totalPositive: 114861, totalReviews: 186485 });
         expect(snapshot.reviews.playtimeMinutes).toHaveLength(50);
+    });
+
+    it('parses the open store page instead of fetching it when it reads the same', async () => {
+        const fetchText = fakeFetch(2868840);
+
+        const snapshot = await fetchSteamSnapshot(2868840, fetchText, undefined, loadStorePage(2868840));
+
+        expect(urls(fetchText)).not.toContain(storePageFetchUrl(2868840));
+        expect(snapshot.page).toMatchObject({ name: 'Slay the Spire 2', originalPrice: 499 });
+    });
+
+    it('still fetches the store page when the open one is in another language', async () => {
+        const fetchText = fakeFetch(2868840);
+        const openPage = loadStorePage(2868840);
+        openPage.documentElement.lang = 'en';
+
+        await fetchSteamSnapshot(2868840, fetchText, undefined, openPage);
+
+        expect(urls(fetchText)).toContain(storePageFetchUrl(2868840));
     });
 
     it('counts every purchase type for a free game', async () => {

@@ -7,7 +7,7 @@ export {
     type ReviewPurchaseType,
 } from './urls';
 export { parseReleaseDate, type CalendarDate, type ReleaseDate } from './releaseDate';
-export { parseStorePage, type StorePageInfo } from './storePage';
+export { matchesFetchedStorePage, parseStorePage, type StorePageInfo } from './storePage';
 export {
     parseReviewSample,
     parseReviewSummary,

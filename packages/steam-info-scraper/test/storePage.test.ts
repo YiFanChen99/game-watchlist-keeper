@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { parseStorePage, type CalendarDate } from '../src';
+import { matchesFetchedStorePage, parseStorePage, type CalendarDate } from '../src';
 import { loadStorePage } from './fixtures';
 
 interface Expected {
@@ -115,5 +115,30 @@ describe('parseStorePage', () => {
                 <tr><td>日文</td><td><span>&#10004;</span></td></tr>
             </table></div>`, 'text/html');
         expect(parseStorePage(doc).interfaceLanguages).toEqual(['日文']);
+    });
+});
+
+describe('matchesFetchedStorePage', () => {
+    it('accepts a 繁中 page priced in TWD, free, or without a price', () => {
+        expect(matchesFetchedStorePage(loadStorePage(2868840))).toBe(true);
+        expect(matchesFetchedStorePage(loadStorePage(570))).toBe(true);
+        // Not released yet: no price, so no currency either.
+        expect(matchesFetchedStorePage(loadStorePage(3669620))).toBe(true);
+    });
+
+    it('refuses another language or currency', () => {
+        const english = loadStorePage(2868840);
+        english.documentElement.lang = 'en';
+        expect(matchesFetchedStorePage(english)).toBe(false);
+
+        const dollars = loadStorePage(2868840);
+        dollars.querySelector('meta[itemprop="priceCurrency"]')!.setAttribute('content', 'USD');
+        expect(matchesFetchedStorePage(dollars)).toBe(false);
+    });
+
+    it('refuses a price without a stated currency', () => {
+        const unstated = loadStorePage(2868840);
+        unstated.querySelector('meta[itemprop="priceCurrency"]')!.remove();
+        expect(matchesFetchedStorePage(unstated)).toBe(false);
     });
 });
