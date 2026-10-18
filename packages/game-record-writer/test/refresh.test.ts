@@ -9,6 +9,7 @@ import {
     mergeDetail,
     mergeSpecial,
     planRefresh,
+    type CellValue,
     type PlaytimeStats,
     type SheetRowValues,
 } from '../src';
@@ -229,10 +230,20 @@ describe('planRefresh', () => {
         ]);
     });
 
-    it('writes the lowest discount only when one is given', () => {
+    it('writes the lowest discount when one is given, replacing an outdated one', () => {
         expect(planRefresh(snapshot, {}, today, { lowestOff: 30 }).updates[Column.lowestOff]).toBe(30);
-        expect(planRefresh(snapshot, {}, today, { lowestOff: null }).updates).not.toHaveProperty(Column.lowestOff);
-        expect(planRefresh(snapshot, {}, today).updates).not.toHaveProperty(Column.lowestOff);
+        expect(planRefresh(snapshot, { [Column.lowestOff]: '!25' }, today, { lowestOff: 30 }).updates[Column.lowestOff]).toBe(30);
+    });
+
+    it('prefixes ! to an old lowest discount it has no new one for, and leaves anything else alone', () => {
+        const lowestOff = (old: CellValue | undefined, options?: { lowestOff: null }) =>
+            planRefresh(snapshot, old === undefined ? {} : { [Column.lowestOff]: old }, today, options).updates[Column.lowestOff];
+
+        expect(lowestOff(30)).toBe('!30');
+        expect(lowestOff('0', { lowestOff: null })).toBe('!0');
+        expect(lowestOff('!30')).toBeUndefined();
+        expect(lowestOff('')).toBeUndefined();
+        expect(lowestOff(undefined)).toBeUndefined();
     });
 
     it('replaces the unknown price placeholder without reporting a change', () => {

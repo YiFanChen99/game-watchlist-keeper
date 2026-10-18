@@ -59,7 +59,7 @@ function main(): void {
         panel.setState({ kind: action });
     }
 
-    const noSteamDbNote = '沒有 SteamDB 區塊，最低off 沒有更新。';
+    const noSteamDbNote = '沒有 SteamDB 區塊，最低off 沒有更新，數字前加 ! 表示可能過時。';
 
     async function add(): Promise<void> {
         panel.setState({ kind: 'busy', label: '新增中…' });

@@ -37,7 +37,7 @@ Google Sheets 的 CSP 要求 Trusted Types（`require-trusted-types-for 'script'
 
 ### 最低off 沒辦法更新
 
-最低off 來自 SteamDB 擴充在 Steam 商店頁上加的區塊，只有開著商店頁的腳本（`userscript-steam`）讀得到；Sheet 上和 SteamGifts 上都沒有。所以這裡跟 `userscript-steamgifts` 一樣，`refreshGame` 不傳 `steamDb`，最低off 維持舊值（規則見 `game-record-writer` 的 COLUMNS.md「最低off」）。要更新最低off，得到 Steam 商店頁按 ↻。
+最低off 來自 SteamDB 擴充在 Steam 商店頁上加的區塊，只有開著商店頁的腳本（`userscript-steam`）讀得到；Sheet 上和 SteamGifts 上都沒有。所以這裡跟 `userscript-steamgifts` 一樣，`refreshGame` 不傳 `steamDb`，最低off 保留舊值，但舊值是數字時會改成 `!<舊值>`，表示可能過時（規則見 `game-record-writer` 的 COLUMNS.md「最低off」）。要更新最低off，得到 Steam 商店頁按 ↻。
 
 ## Development
 

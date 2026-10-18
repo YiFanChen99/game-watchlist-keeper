@@ -42,6 +42,7 @@ export interface RefreshPlan {
 /** Old-row columns `planRefresh` reads. */
 export const refreshReadColumns: readonly ColumnName[] = [
     Column.originalPrice,
+    Column.lowestOff,
     Column.releaseDate,
     Column.reviewScore,
     Column.special,
@@ -57,7 +58,7 @@ export const unknownPricePlaceholder = 10000;
 export interface RefreshOptions {
     /**
      * From `planLowestOff`, where the SteamDB block can be read (the Steam store page).
-     * `null` or absent leaves 最低off alone.
+     * `null` or absent keeps the old 最低off, marked outdated (`markOutdated`).
      */
     lowestOff?: number | null;
 }
@@ -72,8 +73,19 @@ export function reviewScore({ totalPositive, totalReviews }: AppReviewsInfo): nu
     return totalReviews > 0 ? Math.floor((totalPositive / totalReviews) * 100) : null;
 }
 
-/** Prefixed to a 評價度 backed by too few reviews, or not refreshed. */
+/** Prefixed to a 評價度 backed by too few reviews, and to a 評價度 or 最低off a refresh could not replace. */
 export const unreliableScorePrefix = '!';
+
+/**
+ * A cell this refresh has no new value for: an old plain number gets `unreliableScorePrefix`,
+ * so it shows as outdated.
+ *
+ * @returns `null` to leave the cell alone: it is blank, already marked, or other text.
+ */
+function markOutdated(oldValue: CellValue | undefined): string | null {
+    const old = String(oldValue ?? '').trim();
+    return /^\d+$/.test(old) ? `${unreliableScorePrefix}${old}` : null;
+}
 
 /** Fewer reviews than this mark 評價度 unreliable; `minReviewsAfterAYear` once the game is a year old. */
 const minReviews = 50;
@@ -98,8 +110,7 @@ function planReviewScore(
 ): CellValue | null {
     const score = reviewScore(reviews);
     if (score === null) {
-        const old = String(oldValue ?? '').trim();
-        return /^\d+$/.test(old) ? `${unreliableScorePrefix}${old}` : null;
+        return markOutdated(oldValue);
     }
     const required = isAYearOld(releaseDate, today) ? minReviewsAfterAYear : minReviews;
     return reviews.totalReviews < required ? `${unreliableScorePrefix}${score}` : score;
@@ -170,7 +181,8 @@ export function formatPrice(price: number): number {
  *   reported, except replacing `unknownPricePlaceholder`.
  * - The review score gets `unreliableScorePrefix` when too few reviews back it, and an old
  *   number gets it when Steam has no reviews; see `planReviewScore`.
- * - The lowest discount is written only when `options.lowestOff` has one.
+ * - The lowest discount is written when `options.lowestOff` has one; otherwise an old number
+ *   gets `unreliableScorePrefix`, as it may be outdated; see `markOutdated`.
  * - The update date becomes `today`.
  * - The special cell gets its language mark and `Demo` tag refreshed; see `mergeSpecial`.
  * - The detail cell only gets its playtime part replaced; see `mergeDetail`.
@@ -196,8 +208,9 @@ export function planRefresh(
         const change = priceChange(oldRow[Column.originalPrice], price);
         if (change) changes.push(change);
     }
-    if (options.lowestOff !== undefined && options.lowestOff !== null) {
-        updates[Column.lowestOff] = options.lowestOff;
+    const lowestOff = options.lowestOff ?? markOutdated(oldRow[Column.lowestOff]);
+    if (lowestOff !== null) {
+        updates[Column.lowestOff] = lowestOff;
     }
     if (page.releaseDate !== null) {
         const releaseDate = formatReleaseDate(page.releaseDate);
