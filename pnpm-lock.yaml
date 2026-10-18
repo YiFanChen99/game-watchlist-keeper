@@ -80,7 +80,24 @@ importers:
         specifier: workspace:*
         version: link:../core
 
-  packages/userscript-gmail: {}
+  packages/userscript-itad-mail:
+    dependencies:
+      '@watchlist/core':
+        specifier: workspace:*
+        version: link:../core
+      '@watchlist/game-record-writer':
+        specifier: workspace:*
+        version: link:../game-record-writer
+      '@watchlist/sheet-api':
+        specifier: workspace:*
+        version: link:../sheet-api
+    devDependencies:
+      '@types/tampermonkey':
+        specifier: ^5.0.4
+        version: 5.5.0
+      esbuild:
+        specifier: ^0.25.0
+        version: 0.25.12
 
   packages/userscript-sheet: {}
 

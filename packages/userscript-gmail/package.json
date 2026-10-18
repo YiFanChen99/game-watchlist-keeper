@@ -1,8 +1,0 @@
-{
-  "name": "@watchlist/userscript-gmail",
-  "version": "0.0.0",
-  "private": true,
-  "description": "Gmail userscript: price lookup panel for the selected text in ITAD notifications",
-  "license": "MIT",
-  "type": "module"
-}

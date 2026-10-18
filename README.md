@@ -16,7 +16,7 @@ pnpm workspace monorepo，每個 `packages/*` 都是獨立的 node module，以 
 | `apps-script` | Apps Script | Sheet 查詢 / 寫入的 Web App 原始碼 |
 | `userscript-steam` | userscript | Steam 商店頁：把遊戲新增到 Sheet，或更新它那一列 |
 | `userscript-steamgifts` | userscript | SteamGifts：想要程度標註、區域限制計數、資料刷新 |
-| `userscript-gmail` | userscript | Gmail：ITAD 通知的價格查詢面板 |
+| `userscript-itad-mail` | userscript | Gmail 的 ITAD 通知信：Waitlist 遊戲旁顯示 Sheet 的購買/期待度與 Ceiling |
 | `userscript-sheet` | userscript | Google Sheet：資料刷新備援 |
 
 library 不直接呼叫 `GM_xmlhttpRequest`，網路請求由 userscript 注入，所以 library 可以直接在 Node 上跑測試。
