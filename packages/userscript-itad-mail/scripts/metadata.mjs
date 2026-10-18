@@ -26,6 +26,8 @@ export const metadata = {
         // Apps Script web apps 302-redirect /exec responses here.
         'script.googleusercontent.com',
     ],
+    // IsThereAnyDeal's own favicon, copied here: its URL on isthereanydeal.com changes with each of their builds.
+    icon: `${pagesBaseUrl}/logo.png`,
     downloadURL: `${pagesBaseUrl}/Script.user.js`,
 };
 
