@@ -1,5 +1,5 @@
 import { HeaderModifier, RegionModifier } from './domModifier';
-import { getOrFetchData, markUpdated } from './sheetFetcher';
+import { fetchData, getOrFetchData, markUpdated, refetchGame } from './sheetFetcher';
 
 /**
  * User localstorage keys:
@@ -9,7 +9,7 @@ import { getOrFetchData, markUpdated } from './sheetFetcher';
  *  sheetApiToken: the token the Apps Script web app checks
  */
 async function main(): Promise<void> {
-    const sheetData = await getOrFetchData();
+    let sheetData = await getOrFetchData();
     console.log('SteamGifts Annotator: updated');
 
     const pathname = window.location.pathname;
@@ -23,18 +23,38 @@ async function main(): Promise<void> {
         return;
     }
 
-    /** A refresh wrote 更新日: update the cached dump, then the annotations (the year mark may go). */
-    const onRefreshed = (name: string, updatedOn: Date) => {
-        if (!markUpdated(sheetData, name, updatedOn)) {
-            return;
-        }
+    const reannotate = () => {
         if (isGiveawaysPage) {
             headerModifier.modifyGiveaways();
         } else {
             headerModifier.modifyGiveaway();
         }
     };
-    const headerModifier = new HeaderModifier(sheetData, onRefreshed);
+    /** A refresh wrote 更新日: update the cached dump, then the annotations (the year mark may go). */
+    const onRefreshed = (name: string, updatedOn: Date) => {
+        if (markUpdated(sheetData, name, updatedOn)) {
+            reannotate();
+        }
+    };
+    /** Refetch the whole sheet once for all ⟲ without an app id clicked meanwhile. */
+    let refetchingAll: Promise<void> | null = null;
+    const refetchAll = () => {
+        refetchingAll ??= fetchData()
+            .then((data) => {
+                sheetData = data;
+            })
+            .finally(() => {
+                refetchingAll = null;
+            });
+        return refetchingAll;
+    };
+    /** A ⟲ was clicked: refetch its game's row (the whole sheet without an app id), then annotate every header again. */
+    const onRematch = async (appId: number | null) => {
+        await (appId === null ? refetchAll() : refetchGame(sheetData, appId));
+        headerModifier.useSheetData(sheetData);
+        reannotate();
+    };
+    const headerModifier = new HeaderModifier(sheetData, onRefreshed, onRematch);
     const regionModifier = new RegionModifier();
     if (isGiveawaysPage) {
         const count = headerModifier.modifyGiveaways();

@@ -9,6 +9,8 @@
 
 標了更新年份的遊戲，年份旁另外有一個 ↻，按下去用 Steam 的最新資料刷新 Sheet 裡這款遊戲的那一列。
 
+遊戲先用 Steam 連結的 AppID 對 Sheet 名稱欄 HYPERLINK 的 AppID，對不到才比名稱，所以中英文名稱不同也對得到。Sheet 裡對不到的遊戲標成 `(無⟲)`，在 Sheet 補好後按 ⟲ 重抓這款遊戲再比對一次。
+
 ## Installation
 
 1. Install [Violentmonkey](https://addons.mozilla.org/en-us/firefox/addon/violentmonkey/) (Firefox) or [Tampermonkey](https://chrome.google.com/webstore/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo) (Chrome) / [Tampermonkey](https://addons.opera.com/en/extensions/details/tampermonkey-beta/) (Opera).
@@ -21,6 +23,7 @@
 自動在作用頁面是列表頁（`/giveaways/search`）與單一抽獎頁（`/giveaway/`）時，標記：
 
 - **這款遊戲我想不想要？** 撈特定的一份 Google Sheet。在點數後面附上期待度，例如 `(W3)`。如果該筆紀錄太久沒更新，再多標一個更新年份，例如 `(Y19)`。
+   - 比對：抽獎的 Steam 連結有 AppID 時，先找名稱欄 HYPERLINK 連到同一個 AppID 的列；沒有 AppID（組合包的 `sub/` 連結）或找不到時，才用名稱比對（正規化、`/` 分隔的別名、去掉 `xxx Edition`，沒有完全相同的就取部分包含）。
 - **區域限制涵蓋多少區域數量？** 有區域限制的抽獎，解析出區域數量，補在區域圖示旁邊。
 
 撈取的資料有快取機制。
@@ -30,6 +33,13 @@
 - 成功：`已更新。` 加上變動（例如 `原價 400 → 408（+8）`），1 分鐘後或點一下就消失。標註與 localStorage 的 `ekkoGames` 會跟著改成今天更新，不重抓整張表，所以年份和 ↻ 一起消失。
 - Sheet 沒有這款遊戲：只提示，不新增（新增在 Steam 商店頁用 `userscript-steam` 做）。這個訊息和錯誤訊息都保留到點掉為止。
 - 最低off 不會更新：SteamGifts 上沒有 SteamDB 區塊。
+
+**⟲ 重新比對**：Sheet 裡對不到的遊戲，在原本放標註的位置標成 `(無⟲)`。在 Sheet 手動新增或補好後按 ⟲：
+
+- 有 AppID：只用 web app 的單列查詢（`action=row`）抓這款遊戲那一列，照整表傾印的規則（`toDumpRow`）換掉快取裡同 AppID 的遊戲，寫回 localStorage 的 `ekkoGames`（`time` 不變）。Sheet 沒有這款遊戲時提示到 Steam 商店頁新增；期待度空白或 0 的列跟整表傾印一樣不標註，也會提示。
+- 沒有 AppID（組合包）：略過快取重抓整張表。同時按好幾個只會抓一次。
+
+之後重新標註頁面上所有遊戲。對到了就換成一般的標註；還是對不到就提示，1 分鐘後或點一下就消失；抓取失敗的錯誤訊息保留到點掉為止。
 
 第一次使用時，Tampermonkey 會要求允許連線到 `store.steampowered.com`。
 
@@ -66,15 +76,16 @@ metadata block 的唯一來源是 `scripts/metadata.mjs`，build 時產生。省
 
 - `fetchData()`：實際發出請求，回應直接存進 localStorage 的 `ekkoGames`，並附上 `time` 時戳。
 - `getOrFetchData()`：對外的入口。快取未過期就直接沿用，否則重新抓取。回傳 `{ time, games, labelMap }`。
+- `refetchGame()`：⟲ 用的單列重抓，讀名稱、更新日、購買/期待度、AnyDeal 四欄，轉成跟整表傾印一樣的一筆。
 - `markUpdated()`：刷新後把快取裡同名（`B` 等於名稱格）的遊戲的 `G` 改成今天，`time` 不變，所以快取照原本的時間過期。
 
-sheet 資料以欄位代號存取（`B` 遊戲名、`G` 日期、`K` 想要程度，見 `src/types.ts`），這一層不對內容做任何加工。
+sheet 資料以欄位代號存取（`B` 遊戲名、`G` 日期、`K` 想要程度，見 `src/types.ts`），另有名稱 HYPERLINK 的 `appId`。這一層不對內容做任何加工。
 
 #### `src/domModifier.ts` — 比對與改 DOM
 
 把 sheet 資料對應到畫面上的遊戲，並將結果附加上去。
 
-- 標題：補上 期待度 與 更新時間（如果太久）。標註放在 `.ekko-annotation` 裡，再跑一次會整段換掉；有年份時在括號裡放 ↻（同一個標題的按鈕會重用，刷新中的狀態不會被重畫打斷）。
+- 標題：先用 AppID、再用名稱比對（`matchHeader`），補上 期待度 與 更新時間（如果太久）。標註放在 `.ekko-annotation` 裡，再跑一次會整段換掉；有年份時在括號裡放 ↻，對不到遊戲時放 `(無⟲)`（同一個標題的按鈕會重用，執行中的狀態不會被重畫打斷）。`useSheetData()` 換成重抓的表。
 - 區域限制：（與 sheet 無關）另外抓取各遊戲的區域限制頁面取得數量後標示，並快取結果。
 
 #### `src/refreshButton.ts`、`src/refresh.ts` — ↻ 刷新
@@ -82,5 +93,11 @@ sheet 資料以欄位代號存取（`B` 遊戲名、`G` 日期、`K` 想要程�
 - `RefreshButton`：↻ 按鈕與狀態訊息，由 `HeaderModifier` 放進標註。狀態訊息放在標註後面，所以 ↻ 消失後訊息還在。
 - `findAppId()`：從標題區塊的 Steam 連結取 AppID。
 - `refreshRow()`：呼叫 `@watchlist/game-record-writer` 的 `refreshGame`。讀舊值時順便讀名稱欄，交給 `markUpdated()` 找快取裡的那一筆。
+
+#### `src/rematchButton.ts` — ⟲ 重新比對
+
+- `RematchButton`：⟲ 按鈕與狀態訊息。重抓與重新標註由 `src/main.ts` 的 `onRematch` 做（有 AppID 用 `refetchGame()`，沒有用 `fetchData()`；再 `useSheetData()` → 重跑 modify）。
+
+`src/widgets.ts` 是 ↻ 和 ⟲ 共用的按鈕樣式與狀態訊息框（`StatusBubble`）。
 
 localStorage 用到的 key 列在 `src/main.ts` 開頭的註解。

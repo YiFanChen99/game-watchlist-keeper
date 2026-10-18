@@ -1,6 +1,7 @@
 import { createNameMatcher } from '@watchlist/core';
 
 import { findAppId, RefreshButton, type OnRefreshed } from './refreshButton';
+import { RematchButton } from './rematchButton';
 import type { SheetData, SheetGame } from './types';
 
 /**
@@ -44,17 +45,62 @@ function isRefreshable(game: SheetGame): boolean {
 /** The span holding a header's annotation, so it can be replaced. */
 const annotationClass = 'ekko-annotation';
 
+/**
+ * Refetches the row of `appId`, or the whole sheet without one, then has
+ * `HeaderModifier.useSheetData` and the page's modify run again.
+ */
+export type OnRematch = (appId: number | null) => Promise<void>;
+
+/** The giveaway name a header shows; a long one is cut with `...`. */
+function headerName(headerElement: HTMLElement): string {
+    return headerElement.innerText.replace(/(\.{3})$/, '');
+}
+
+/** The app id of the header's Steam link; null for a bundle's `sub/` link or none. */
+function headerAppId(headerElement: HTMLElement): number | null {
+    return headerElement.parentElement && findAppId(headerElement.parentElement);
+}
+
 export class HeaderModifier {
     /**
      * Matches a giveaway name (maybe with an extra 'xxx edition') to sheet games.
      * One game on exact match, otherwise all partial matches.
      */
-    private readonly matchGames: (rawName: string) => SheetGame[];
+    private matchGames!: (rawName: string) => SheetGame[];
+    /** Sheet games by the app id their name HYPERLINK links; tried before the name. */
+    private gamesByAppId = new Map<number, SheetGame[]>();
     /** Created the first time a header shows a year mark, then reused so a busy one stays busy. */
     private readonly refreshButtons = new WeakMap<HTMLElement, RefreshButton>();
+    /** Created the first time a header matches no game, then reused like `refreshButtons`. */
+    private readonly rematchButtons = new WeakMap<HTMLElement, RematchButton>();
 
-    constructor(sheetData: SheetData, private readonly onRefreshed: OnRefreshed) {
+    constructor(
+        sheetData: SheetData,
+        private readonly onRefreshed: OnRefreshed,
+        private readonly onRematch: OnRematch,
+    ) {
+        this.useSheetData(sheetData);
+    }
+
+    /** Match against `sheetData` from now on, e.g. a refetched sheet; the annotations stay until modified again. */
+    useSheetData(sheetData: SheetData): void {
         this.matchGames = createNameMatcher(sheetData.games, game => game.B);
+        this.gamesByAppId = new Map();
+        for (const game of sheetData.games) {
+            if (game.appId !== undefined) {
+                this.gamesByAppId.set(game.appId, [...(this.gamesByAppId.get(game.appId) ?? []), game]);
+            }
+        }
+    }
+
+    /**
+     * The games whose name links the header's app id; without any, the games its name matches
+     * (a bundle, a sheet name without a HYPERLINK, or an edition with an app id of its own).
+     */
+    private matchHeader(headerElement: HTMLElement): SheetGame[] {
+        const appId = headerAppId(headerElement);
+        return (appId === null ? undefined : this.gamesByAppId.get(appId))
+            ?? this.matchGames(headerName(headerElement));
     }
 
     /**
@@ -82,26 +128,19 @@ export class HeaderModifier {
     }
 
     /**
-     * Match header name with sheet data and modify DOM.
+     * Match the header with sheet data, see `matchHeader`, and modify DOM.
      * Running it again replaces the annotation, e.g. after a refresh changed the update date.
      *
      * A year mark gets a ↻ inside it, e.g. `(W4) (Y19↻)`, when the giveaway's Steam link has an
      * app id (a bundle's `sub/` link has none) and no matched game has 購買/期待度 4 or 5. The
      * refresh drops the mark, and the ↻ with it.
-     * @returns Whether modified successfully
+     *
+     * A header matching no game gets `(無⟲)` instead: ⟲ refetches the game's row (the whole sheet
+     * without an app id) and runs the match again, for a game just added or fixed in the sheet by hand.
+     * @returns Whether a game matched
      */
     private modify(headerElement: HTMLElement | null): boolean {
         if (!headerElement) return false;
-
-        const name = headerElement.innerText.replace(/(\.{3})$/, '');
-        const games = this.matchGames(name);
-
-        if (!games.length) {
-            return false;
-        }
-
-        const want = HeaderDisplayFormatter.toWant(games);
-        const year = HeaderDisplayFormatter.toUpdateYear(games);
 
         const pointElement = headerElement.nextElementSibling;
         if (!(pointElement instanceof HTMLElement)) {
@@ -113,6 +152,15 @@ export class HeaderModifier {
             annotation.className = annotationClass;
             pointElement.append(annotation);
         }
+
+        const games = this.matchHeader(headerElement);
+        if (!games.length) {
+            annotation.replaceChildren(' (無', this.rematchButtonFor(headerElement, annotation).button, ')');
+            return false;
+        }
+
+        const want = HeaderDisplayFormatter.toWant(games);
+        const year = HeaderDisplayFormatter.toUpdateYear(games);
         const refresh = year && games.every(isRefreshable)
             ? this.refreshButtonFor(headerElement, annotation)
             : undefined;
@@ -127,7 +175,7 @@ export class HeaderModifier {
     private refreshButtonFor(headerElement: HTMLElement, annotation: HTMLElement): RefreshButton | undefined {
         let refresh = this.refreshButtons.get(headerElement);
         if (!refresh) {
-            const appId = headerElement.parentElement && findAppId(headerElement.parentElement);
+            const appId = headerAppId(headerElement);
             if (!appId) {
                 return undefined;
             }
@@ -136,6 +184,25 @@ export class HeaderModifier {
             annotation.after(refresh.status);
         }
         return refresh;
+    }
+
+    /** The header's ⟲, its status put after `annotation`. */
+    private rematchButtonFor(headerElement: HTMLElement, annotation: HTMLElement): RematchButton {
+        let rematch = this.rematchButtons.get(headerElement);
+        if (!rematch) {
+            rematch = new RematchButton(async () => {
+                const appId = headerAppId(headerElement);
+                await this.onRematch(appId);
+                if (this.matchHeader(headerElement).length) {
+                    return null;
+                }
+                // The row was found (else `not-found`), but the dump leaves it out.
+                return appId === null ? '重抓 Sheet 後還是對不到這款遊戲。' : 'Sheet 裡這款遊戲的期待度是空白或 0，不標註。';
+            });
+            this.rematchButtons.set(headerElement, rematch);
+            annotation.after(rematch.status);
+        }
+        return rematch;
     }
 }
 
