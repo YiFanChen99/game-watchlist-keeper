@@ -35,12 +35,22 @@ class HeaderDisplayFormatter {
     }
 }
 
+/** Whether the game's 購買/期待度 is 4 or 5, the games worth a price check. */
+function isMostWanted(game: SheetGame): boolean {
+    return ['4', '5'].includes(String(game.K).trim());
+}
+
 /**
  * Whether ↻ may refresh this game's row: not when its 購買/期待度 is 4 or 5. A defence for now,
  * because 目前評價 cannot be updated yet.
  */
 function isRefreshable(game: SheetGame): boolean {
-    return !['4', '5'].includes(String(game.K).trim());
+    return !isMostWanted(game);
+}
+
+/** The app ids whose prices the header's 🔍 looks up: those of its games with 購買/期待度 4 or 5. */
+function priceAppIdsOf(games: SheetGame[]): number[] {
+    return appIdsOf(games.filter(isMostWanted));
 }
 
 /** The distinct app ids of `games`; a sheet name without a HYPERLINK has none. */
@@ -143,8 +153,8 @@ export class HeaderModifier {
      * app id (a bundle's `sub/` link has none) and no matched game has 購買/期待度 4 or 5. The
      * refresh drops the mark, and the ↻ with it.
      *
-     * The want level gets a $ inside it, e.g. `(W4$)`, when a matched game has an app id: it shows the
-     * games' 最低$ and Ceiling from the sheet, e.g. `$50, 史$90`.
+     * The want level gets a line magnifier inside it, e.g. `(W4🔍)`, when a matched game with an app id
+     * has 購買/期待度 4 or 5: it shows those games' Ceiling and 最低$ from the sheet, e.g. `$50, 史$90`.
      *
      * A header matching no game gets `(無⟲)` instead: ⟲ refetches the game's row (the whole sheet
      * without an app id) and runs the match again, for a game just added or fixed in the sheet by hand.
@@ -175,7 +185,7 @@ export class HeaderModifier {
         const refresh = year && games.every(isRefreshable)
             ? this.refreshButtonFor(headerElement, annotation)
             : undefined;
-        const price = appIdsOf(games).length ? this.priceButtonFor(headerElement, annotation) : undefined;
+        const price = priceAppIdsOf(games).length ? this.priceButtonFor(headerElement, annotation) : undefined;
         annotation.replaceChildren(
             ` (${want}`,
             ...(price ? [price.button] : []),
@@ -200,11 +210,11 @@ export class HeaderModifier {
         return refresh;
     }
 
-    /** The header's $, its status put after `annotation`. */
+    /** The header's price lookup button, its status put after `annotation`. */
     private priceButtonFor(headerElement: HTMLElement, annotation: HTMLElement): PriceButton {
         let price = this.priceButtons.get(headerElement);
         if (!price) {
-            price = new PriceButton(() => appIdsOf(this.matchHeader(headerElement)));
+            price = new PriceButton(() => priceAppIdsOf(this.matchHeader(headerElement)));
             this.priceButtons.set(headerElement, price);
             annotation.after(price.status);
         }
