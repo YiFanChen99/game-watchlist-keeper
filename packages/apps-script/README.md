@@ -7,7 +7,7 @@
 所有請求都要帶 `?token=`，跟 script property `API_TOKEN` 比對；沒設定 `API_TOKEN` 時一律拒絕。格式與型別定義在 `@watchlist/sheet-api`。拒絕時回 `{ error, message }`（HTTP 仍是 200）。
 
 - `doGet`：
-  - 不帶 `action`：`STEAM` 工作表的整表傾印（`{ games, labelMap }`）。
+  - 不帶 `action`：`STEAM` 工作表的整表傾印（`{ games, labelMap }`）。每個遊戲帶上名稱 HYPERLINK 連到的 `appId`（名稱不是 HYPERLINK 時省略）；列的轉換規則是 `@watchlist/sheet-api` 的 `toDumpRow`，讓 client 讀單列時套用同一套規則。
   - `action=row&appId=<id>&columns=<欄名>,<欄名>`：名稱欄連到這個 AppID 的那一列，回 `{ row, values }`。日期格式是 `YYYY/M/D`。
 - `doPost`：body 是 JSON 的 `WriteRequest`。
   - `update`：只寫指定的欄位。名稱、公式欄（例如 最低$）不能寫，目前含公式的格子也不能寫。
@@ -15,7 +15,7 @@
   - 寫入期間持有 script lock，寫完清掉傾印快取。
 - 欄位一律以第 1 列的標題名稱定位。AppID 只從名稱欄的 HYPERLINK 公式找（名稱一律是 HYPERLINK，沒有用「插入連結」的格子）。
 - 兩份快取都 gzip 後分塊存在 CacheService，最長 6 小時：
-  - **整表傾印**：寫入後清掉。
+  - **整表傾印**（`dump:v2`）：寫入後清掉。重建時讀的名稱欄公式也拿來順便重建 AppID 索引快取。
   - **AppID → 列號索引**：讓單列查詢不必每次讀整個名稱欄。用到快取裡的列號前，會先讀那一格的公式確認還是同一個 AppID，不符就重新掃描，所以快取過期也不會讀錯或寫錯列。`append` 一律重新掃描來防重複，寫完把第 4 列起的列號加 1，再把新列加進索引。
   - 手動編輯 Sheet 時由 `onEdit` 兩份都清掉；插入、刪除、排序整列不會觸發 `onEdit`，由 `onChange` 清掉（要手動設定觸發條件，見下方）。
 - `WantToOwned`：Sheet 自訂函式，沿用原專案。

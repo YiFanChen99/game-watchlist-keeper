@@ -1,4 +1,5 @@
-import type { SheetDump, SheetDumpRow } from '@watchlist/sheet-api';
+import { extractAppId } from '@watchlist/core';
+import { toDumpRow, type SheetDump, type SheetDumpRow } from '@watchlist/sheet-api';
 
 /** What `Range.getValues()` puts in a cell. */
 export type CellValue = string | number | boolean | Date;
@@ -13,7 +14,6 @@ export const lastColumn = 'L';
 const keptColumns = ['B', 'G', 'K'] as const;
 /** AnyDeal: read only to spot the owned mark, then dropped. */
 const ownedColumn = 'L';
-const ownedMark = /[^\d]*已有[^\d]*/;
 
 function columnLetter(index: number): string {
     return String.fromCharCode(firstColumn.charCodeAt(0) + index);
@@ -38,33 +38,32 @@ function toDateString(value: CellValue): string {
     return new Date(typeof value === 'number' ? value : String(value)).toLocaleDateString();
 }
 
-function toRow(cells: Record<string, CellValue>): SheetDumpRow | null {
-    const name = cells.B ?? '';
-    const want = cells.K ?? '';
-    // `Number()` keeps the original `== 0` check: 0, '0' and blank-ish strings all skip.
-    if (name === '' || want === '' || Number(want) === 0) {
-        return null;
-    }
-
+function toRow(cells: Record<string, CellValue>, nameFormula: string): SheetDumpRow | null {
     const updatedOn = cells.G ?? '';
-    const owned = ownedMark.exec(String(cells[ownedColumn] ?? ''))?.[0];
-    return {
-        B: String(name),
-        G: updatedOn === '' ? '' : toDateString(updatedOn),
-        K: owned ?? (typeof want === 'number' ? want : String(want)),
-    };
+    return toDumpRow({
+        name: cells.B,
+        updatedOn: updatedOn === '' ? '' : toDateString(updatedOn),
+        want: cells.K,
+        anyDeal: cells[ownedColumn],
+        appId: extractAppId(nameFormula),
+    });
 }
 
 /**
  * Turn the sheet's B:L values into the dump the annotator reads.
  *
- * Rows without a name, or whose want level is blank or 0, are skipped.
- * An owned mark (e.g. `已有`) in the AnyDeal column replaces the want level.
+ * Rows without a name, or whose want level is blank or 0, are skipped; see `toDumpRow`.
  *
  * @param header Row 1, B through L.
  * @param rows Rows 2 and below, B through L.
+ * @param nameFormulas Column B's formulas, one per row of `rows`: a row gets the app id its
+ *   name HYPERLINK links.
  */
-export function buildDump(header: readonly CellValue[], rows: readonly (readonly CellValue[])[]): SheetDump {
+export function buildDump(
+    header: readonly CellValue[],
+    rows: readonly (readonly CellValue[])[],
+    nameFormulas: readonly string[] = [],
+): SheetDump {
     const headerCells = cellsByColumn(header);
     const labelMap: Record<string, unknown> = {};
     for (const column of keptColumns) {
@@ -72,11 +71,11 @@ export function buildDump(header: readonly CellValue[], rows: readonly (readonly
     }
 
     const games: SheetDumpRow[] = [];
-    for (const row of rows) {
-        const game = toRow(cellsByColumn(row));
+    rows.forEach((row, index) => {
+        const game = toRow(cellsByColumn(row), nameFormulas[index] ?? '');
         if (game) {
             games.push(game);
         }
-    }
+    });
     return { games, labelMap };
 }

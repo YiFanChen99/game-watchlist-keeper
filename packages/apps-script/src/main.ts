@@ -50,7 +50,7 @@ function gzipCache(key: string): ChunkedCache {
 }
 
 /** The whole-sheet dump the annotator reads. */
-const dumpCache = () => gzipCache('dump:v1');
+const dumpCache = () => gzipCache('dump:v2');
 
 /** `AppIdIndex` of the name column, so a lookup need not read every name. */
 const appIdIndexCache = () => gzipCache('appIds:v1');
@@ -73,7 +73,12 @@ function readDumpText(): string {
     const header = sheet.getRange(`${firstColumn}1:${lastColumn}1`).getValues()[0] ?? [];
     const lastRow = sheet.getLastRow();
     const rows = lastRow < 2 ? [] : sheet.getRange(`${firstColumn}2:${lastColumn}${lastRow}`).getValues();
-    return JSON.stringify(buildDump(header as CellValue[], rows as CellValue[][]));
+    const nameFormulas = lastRow < 2
+        ? []
+        : sheet.getRange(`${firstColumn}2:${firstColumn}${lastRow}`).getFormulas().map(cells => String(cells[0] ?? ''));
+    // The same formulas make the app id index (the dump's B is the name column), so warm that cache too.
+    appIdIndexCache().put(JSON.stringify(indexAppIds(nameFormulas)));
+    return JSON.stringify(buildDump(header as CellValue[], rows as CellValue[][], nameFormulas));
 }
 
 function jsonOutput(text: string): GoogleAppsScript.Content.TextOutput {

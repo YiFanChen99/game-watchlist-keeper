@@ -59,6 +59,15 @@ describe('buildDump', () => {
         expect(games[2]?.K).toBe('已有(Steam)');
     });
 
+    it('adds the app id each name HYPERLINK links', () => {
+        const formulas = rows.map(() => '');
+        formulas[0] = '=HYPERLINK("https://store.steampowered.com/app/1145360/","Hades / 黑帝斯")';
+        const { games } = buildDump(header, rows, formulas);
+
+        expect(games[0]).toEqual({ B: 'Hades / 黑帝斯', G: new Date(2025, 2, 4).toDateString(), K: 3, appId: 1145360 });
+        expect(games[1]).not.toHaveProperty('appId');
+    });
+
     // The original returned a number here, which crashed the annotator's `B.split()`.
     it('turns a numeric name into a string', () => {
         expect(buildDump(header, [row(1979, '', 5)]).games[0]?.B).toBe('1979');
