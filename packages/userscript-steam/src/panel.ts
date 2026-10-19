@@ -18,15 +18,52 @@ const playtimeLabel = '時長';
 /** How long a message stays unless it reports a failure, which stays until clicked. */
 const messageLifetimeMs = 60_000;
 
+/** A message line under the buttons; clicking it closes it. */
+class StatusLine {
+    readonly element = document.createElement('div');
+    private hideTimer: ReturnType<typeof setTimeout> | undefined;
+
+    /** @param name Set as `data-status`, telling the lines apart. */
+    constructor(name: string) {
+        this.element.dataset.status = name;
+        Object.assign(this.element.style, {
+            maxWidth: '320px', padding: '2px 6px', whiteSpace: 'pre-line', textAlign: 'right',
+            fontSize: '12px', color: '#fff', background: 'rgba(0, 0, 0, 0.7)', borderRadius: '3px',
+            cursor: 'pointer',
+        });
+        this.element.title = '點一下關閉';
+        this.element.addEventListener('click', () => {
+            this.show('', false);
+        });
+        this.show('', false);
+    }
+
+    /**
+     * @param message `''` hides the line.
+     * @param persist Keep the message until clicked instead of hiding it after a minute.
+     */
+    show(message: string, persist: boolean): void {
+        clearTimeout(this.hideTimer);
+        this.element.textContent = message;
+        this.element.style.display = message ? '' : 'none';
+        if (message && !persist) {
+            this.hideTimer = setTimeout(() => {
+                this.show('', false);
+            }, messageLifetimeMs);
+        }
+    }
+}
+
 /**
- * The sheet button with a narrower playtime button on its right, plus a status line under
- * them, fixed at the page's top right.
+ * The sheet button with a narrower playtime button on its right, fixed at the page's top right.
+ * Under them, each button has a status line of its own, so a playtime copy never hides a sheet
+ * failure that waits to be read, nor the other way round.
  */
 export class Panel {
     private readonly button = document.createElement('button');
     private readonly playtimeButton = document.createElement('button');
-    private readonly status = document.createElement('div');
-    private hideTimer: ReturnType<typeof setTimeout> | undefined;
+    private readonly status = new StatusLine('sheet');
+    private readonly playtimeStatus = new StatusLine('playtime');
 
     /**
      * @param onClick The sheet button: add, update or retry.
@@ -43,21 +80,12 @@ export class Panel {
         Object.assign(buttons.style, { display: 'flex', gap: '6px' });
         Object.assign(this.button.style, { height: '32px', minWidth: '86px', padding: '0 12px', cursor: 'pointer' });
         Object.assign(this.playtimeButton.style, { height: '32px', minWidth: '48px', padding: '0 6px', cursor: 'pointer' });
-        Object.assign(this.status.style, {
-            maxWidth: '320px', padding: '2px 6px', whiteSpace: 'pre-line', textAlign: 'right',
-            fontSize: '12px', color: '#fff', background: 'rgba(0, 0, 0, 0.7)', borderRadius: '3px',
-            cursor: 'pointer',
-        });
         this.playtimeButton.textContent = playtimeLabel;
         this.playtimeButton.title = '只抓遊戲時長，複製到剪貼簿';
-        this.status.title = '點一下關閉';
         this.button.addEventListener('click', onClick);
         this.playtimeButton.addEventListener('click', onPlaytime);
-        this.status.addEventListener('click', () => {
-            this.showMessage('', false);
-        });
         buttons.append(this.button, this.playtimeButton);
-        area.append(buttons, this.status);
+        area.append(buttons, this.status.element, this.playtimeStatus.element);
         document.body.append(area);
         this.setState({ kind: 'checking' });
     }
@@ -78,15 +106,13 @@ export class Panel {
         this.playtimeButton.disabled = busy;
     }
 
-    /** @param persist Keep the message until clicked instead of hiding it after a minute. */
+    /** The sheet button's message. @param persist Keep it until clicked instead of hiding it after a minute. */
     showMessage(message: string, persist: boolean): void {
-        clearTimeout(this.hideTimer);
-        this.status.textContent = message;
-        this.status.style.display = message ? '' : 'none';
-        if (message && !persist) {
-            this.hideTimer = setTimeout(() => {
-                this.showMessage('', false);
-            }, messageLifetimeMs);
-        }
+        this.status.show(message, persist);
+    }
+
+    /** The playtime button's message, on its own line. @param persist As `showMessage`. */
+    showPlaytimeMessage(message: string, persist: boolean): void {
+        this.playtimeStatus.show(message, persist);
     }
 }

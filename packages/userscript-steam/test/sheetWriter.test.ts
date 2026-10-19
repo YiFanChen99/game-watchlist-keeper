@@ -26,7 +26,7 @@ vi.mock('../src/tampermonkey', async importOriginal => ({
 /** Slay the Spire 2: 繁中 and TWD, so the open page reads the same as a fetched one. */
 const appId = 2868840;
 const storePageFetchUrl = `https://store.steampowered.com/app/${appId}/?l=tchinese&cc=tw`;
-const noSteamDbNote = '沒有 SteamDB 區塊，最低off 沒有更新，數字前加 ! 表示可能過時。';
+const noSteamDbNote = '沒有 SteamDB 區塊，最低off 沒有更新（原本是數字的話前面加上 !，表示可能過時）。';
 const messageLifetimeMs = 60_000;
 
 const setClipboard = vi.fn<(text: string, type: string) => void>();
@@ -57,14 +57,19 @@ function panel(): HTMLElement {
 const sheetButton = () => panel().querySelectorAll('button')[0]!;
 const playtimeButton = () => panel().querySelectorAll('button')[1]!;
 
-/** The status line under the buttons; null while hidden. */
-function status(): string | null {
-    const line = panel().lastElementChild as HTMLElement;
+/** A button's status line under the buttons. */
+function statusLine(name: 'sheet' | 'playtime'): HTMLElement {
+    return panel().querySelector<HTMLElement>(`[data-status="${name}"]`)!;
+}
+
+/** The sheet button's status line; null while hidden. */
+function status(name: 'sheet' | 'playtime' = 'sheet'): string | null {
+    const line = statusLine(name);
     return line.style.display === 'none' ? null : line.textContent;
 }
 
-function clickStatus(): void {
-    (panel().lastElementChild as HTMLElement).click();
+function clickStatus(name: 'sheet' | 'playtime' = 'sheet'): void {
+    statusLine(name).click();
 }
 
 /** Wait until neither button is busy. */
@@ -470,7 +475,7 @@ describe('時長 button', () => {
         const [playtime, type] = setClipboard.mock.calls[0]!;
         expect(playtime).toMatch(/^中位\d+H，PR\d+ \d+H。$/);
         expect(type).toBe('text');
-        expect(status()).toBe(`已複製：${playtime}`);
+        expect(status('playtime')).toBe(`已複製：${playtime}`);
         expect(steamFetchText.mock.calls.every(([url]) => url.includes('/appreviews/'))).toBe(true);
         expect(api.readRow).not.toHaveBeenCalled();
         expect(api.updateRow).not.toHaveBeenCalled();
@@ -478,7 +483,7 @@ describe('時長 button', () => {
         expect(sheetButton().textContent).toBe('＋ 新增');
 
         vi.advanceTimersByTime(messageLifetimeMs);
-        expect(status()).toBeNull();
+        expect(status('playtime')).toBeNull();
     });
 
     it('works while the sheet is still being checked', async () => {
@@ -491,7 +496,7 @@ describe('時長 button', () => {
         });
 
         expect(sheetButton().textContent).toBe('查詢 Sheet…');
-        expect(status()).toMatch(/^已複製：中位/);
+        expect(status('playtime')).toMatch(/^已複製：中位/);
     });
 
     it('keeps a failure until clicked, and is ready again', async () => {
@@ -505,10 +510,40 @@ describe('時長 button', () => {
 
         expect(setClipboard).not.toHaveBeenCalled();
         expect(playtimeButton().textContent).toBe('時長');
-        expect(status()).toBe('Failed to GET reviews: 502');
+        expect(status('playtime')).toBe('Failed to GET reviews: 502');
         vi.advanceTimersByTime(10 * messageLifetimeMs);
-        expect(status()).toBe('Failed to GET reviews: 502');
-        clickStatus();
-        expect(status()).toBeNull();
+        expect(status('playtime')).toBe('Failed to GET reviews: 502');
+        clickStatus('playtime');
+        expect(status('playtime')).toBeNull();
+    });
+
+    it('keeps a sheet failure shown beside a playtime copy, each line on its own timer', async () => {
+        vi.useFakeTimers();
+        vi.spyOn(console, 'error').mockImplementation(() => undefined);
+        await start();
+        api.appendRow.mockRejectedValueOnce(new Error('Failed to POST: 500'));
+        sheetButton().click();
+        await settle();
+        expect(status()).toBe('Failed to POST: 500');
+
+        playtimeButton().click();
+        await settle();
+        expect(status('playtime')).toMatch(/^已複製：中位/);
+        expect(status()).toBe('Failed to POST: 500');
+
+        vi.advanceTimersByTime(messageLifetimeMs);
+        expect(status('playtime')).toBeNull();
+        expect(status()).toBe('Failed to POST: 500');
+    });
+
+    it('keeps a playtime copy shown when the sheet button reports', async () => {
+        vi.useFakeTimers();
+        await start();
+        playtimeButton().click();
+        await settle();
+        sheetButton().click();
+        await settle();
+        expect(status()).toMatch(/^已新增。/);
+        expect(status('playtime')).toMatch(/^已複製：中位/);
     });
 });

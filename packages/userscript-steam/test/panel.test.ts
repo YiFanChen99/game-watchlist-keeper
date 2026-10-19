@@ -11,10 +11,11 @@ let panel: Panel;
 const area = () => document.getElementById('EkkoSteamSheetWriter')!;
 const sheetButton = () => area().querySelectorAll('button')[0]!;
 const playtimeButton = () => area().querySelectorAll('button')[1]!;
-const statusLine = () => area().lastElementChild as HTMLElement;
+const statusLine = (name: 'sheet' | 'playtime' = 'sheet') => area().querySelector<HTMLElement>(`[data-status="${name}"]`)!;
 
-/** The status line's text; null while hidden. */
-const status = () => (statusLine().style.display === 'none' ? null : statusLine().textContent);
+/** A status line's text; null while hidden. */
+const status = (name: 'sheet' | 'playtime' = 'sheet') =>
+    (statusLine(name).style.display === 'none' ? null : statusLine(name).textContent);
 
 beforeEach(() => {
     vi.useFakeTimers();
@@ -35,6 +36,7 @@ describe('Panel', () => {
         expect(playtimeButton().textContent).toBe('時長');
         expect(playtimeButton().disabled).toBe(false);
         expect(status()).toBeNull();
+        expect(status('playtime')).toBeNull();
     });
 
     it('labels the sheet button by state, disabled only while checking or busy', () => {
@@ -89,8 +91,26 @@ describe('Panel', () => {
         expect(status()).toBe('商店頁讀不到「名稱」，沒有新增。');
     });
 
+    it('shows the playtime message on its own line, which hides and closes on its own', () => {
+        panel.setState({ kind: 'error' }, 'Sheet API: internal');
+        panel.showPlaytimeMessage('已複製：中位12H，PR84 30H。', false);
+        expect(status()).toBe('Sheet API: internal');
+        expect(status('playtime')).toBe('已複製：中位12H，PR84 30H。');
+
+        vi.advanceTimersByTime(messageLifetimeMs);
+        expect(status('playtime')).toBeNull();
+        expect(status()).toBe('Sheet API: internal');
+
+        panel.showPlaytimeMessage('Failed to GET reviews: 502', true);
+        statusLine().click();
+        expect(status()).toBeNull();
+        expect(status('playtime')).toBe('Failed to GET reviews: 502');
+        statusLine('playtime').click();
+        expect(status('playtime')).toBeNull();
+    });
+
     it("gives a new message its own minute, and an earlier message's timer does not hide a kept one", () => {
-        panel.showMessage('已複製：中位12H，PR84 30H。', false);
+        panel.showMessage('已新增。', false);
         vi.advanceTimersByTime(messageLifetimeMs / 2);
         panel.showMessage('已更新。', false);
         vi.advanceTimersByTime(messageLifetimeMs / 2);

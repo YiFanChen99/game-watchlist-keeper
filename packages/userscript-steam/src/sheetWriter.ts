@@ -43,10 +43,10 @@ export function startSheetWriter(): void {
         try {
             const playtime = await fetchPlaytime(appId!, fetchText);
             copyText(playtime);
-            panel.showMessage(`已複製：${playtime}`, false);
+            panel.showPlaytimeMessage(`已複製：${playtime}`, false);
         } catch (error) {
             console.error('Steam Sheet Writer:', error);
-            panel.showMessage(error instanceof Error ? error.message : String(error), true);
+            panel.showPlaytimeMessage(error instanceof Error ? error.message : String(error), true);
         } finally {
             panel.setPlaytimeBusy(false);
         }
@@ -58,7 +58,7 @@ export function startSheetWriter(): void {
         panel.setState({ kind: action });
     }
 
-    const noSteamDbNote = '沒有 SteamDB 區塊，最低off 沒有更新，數字前加 ! 表示可能過時。';
+    const noSteamDbNote = '沒有 SteamDB 區塊，最低off 沒有更新（原本是數字的話前面加上 !，表示可能過時）。';
 
     async function add(): Promise<void> {
         panel.setState({ kind: 'busy', label: '新增中…' });

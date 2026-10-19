@@ -9,6 +9,8 @@
 
 右邊另有一顆較窄的 **時長** 按鈕：只抓遊戲時長（`中位nH，PR84 nH。`，跟備註裡的那段一樣），複製到剪貼簿，不碰 Sheet，也不需要 token。
 
+按鈕下方的訊息：兩顆按鈕各有一行，互不覆蓋（例如複製時長不會蓋掉更新失敗的訊息）。成功的訊息 1 分鐘後消失，失敗的保留到點掉為止，點一下就關閉那一行。
+
 取代舊的 [tampermonkey--steam-info-scraper](https://github.com/YiFanChen99/tampermonkey--steam-info-scraper)（擷取後貼到剪貼簿），不用再手動貼上。
 
 ## Installation
