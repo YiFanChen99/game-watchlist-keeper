@@ -20,7 +20,7 @@ export const metadata = {
     description: pkg.description,
     author: pkg.author,
     match: ['https://mail.google.com/*'],
-    grant: ['GM_xmlhttpRequest', 'GM_getValue', 'GM_setValue', 'GM_deleteValue'],
+    grant: ['GM_xmlhttpRequest', 'GM_getValue', 'GM_setValue', 'GM_deleteValue', 'GM_openInTab'],
     connect: [
         'script.google.com',
         // Apps Script web apps 302-redirect /exec responses here.

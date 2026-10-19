@@ -1,8 +1,8 @@
 {
   "name": "@watchlist/userscript-itad-mail",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "private": true,
-  "description": "In Gmail, show each ITAD notification game in your Waitlist with its sheet row's 購買/期待度 and prices",
+  "description": "In Gmail, show the games of each mail from ITAD with their sheet row's 購買/期待度, and prices for those in your Waitlist",
   "author": "YiFanChen99",
   "license": "MIT",
   "type": "module",

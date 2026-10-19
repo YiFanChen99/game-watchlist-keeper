@@ -1,9 +1,9 @@
-import { annotate, findWaitlistGames } from './annotator';
+import { annotate, findGames } from './annotator';
 import { SheetLookup } from './sheet';
 
 /**
- * Gmail renders each opened mail on the fly, so watch the page and annotate the Waitlist games
- * of every ITAD notification as it appears.
+ * Gmail renders each opened mail on the fly, so watch the page and annotate the games of every
+ * mail from ITAD as it appears.
  *
  * Tampermonkey storage keys:
  *  sheetApiToken: the token the Apps Script web app checks
@@ -12,7 +12,7 @@ import { SheetLookup } from './sheet';
 function main(): void {
     const lookup = new SheetLookup();
     const scan = () => {
-        for (const game of findWaitlistGames(document)) {
+        for (const game of findGames(document)) {
             void annotate(game, lookup);
         }
     };
