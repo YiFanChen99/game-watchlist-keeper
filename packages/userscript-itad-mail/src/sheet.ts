@@ -40,11 +40,19 @@ async function fetchGames(): Promise<SheetDumpRow[]> {
 
 const cellText = (value: string | number | undefined) => String(value ?? '').trim();
 
+/** What `annotate` needs to look a game up; `SheetLookup` reads the sheet. */
+export interface GameLookup {
+    /** The dump's rows that `name` matches. */
+    match(name: string): Promise<SheetDumpRow[]>;
+    /** The row's 購買/期待度, prices and link. */
+    info(game: SheetDumpRow): Promise<GameInfo>;
+}
+
 /**
  * Looks up ITAD game names in the sheet. The dump is fetched once, on the first lookup, and each
  * row's cells once per page load: the dump has no prices, so a matched game's row is read by app id.
  */
-export class SheetLookup {
+export class SheetLookup implements GameLookup {
     private matcher: Promise<(rawName: string) => SheetDumpRow[]> | null = null;
     private readonly rows = new Map<number, Promise<GameInfo>>();
 

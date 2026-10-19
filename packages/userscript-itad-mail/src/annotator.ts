@@ -1,6 +1,6 @@
 import { formatHistoricalLow, formatPrice, type Prices } from '@watchlist/price-lookup';
 
-import type { GameInfo, SheetLookup } from './sheet';
+import type { GameInfo, GameLookup } from './sheet';
 
 /** Set on a game link once its annotation is added, so a rescan skips it. */
 const doneAttribute = 'data-ekko-itad';
@@ -67,7 +67,7 @@ function createAnnotation(mark: HTMLElement): HTMLElement {
  * Put the sheet's 購買/期待度, 最低$ and 目標價 after the game's `in Waitlist`, e.g.
  * `in Waitlist (W4 $50, 史$90)`, linked to the game's sheet row; several matched rows are joined with ` / `.
  */
-export async function annotate({ link, mark }: WaitlistGame, lookup: SheetLookup): Promise<void> {
+export async function annotate({ link, mark }: WaitlistGame, lookup: GameLookup): Promise<void> {
     link.setAttribute(doneAttribute, '');
     const annotation = createAnnotation(mark);
     const show = (content: string | Node[], title = '') => {
