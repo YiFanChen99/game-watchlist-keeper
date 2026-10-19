@@ -1,4 +1,4 @@
-import { copyFile, mkdir } from 'node:fs/promises';
+import { mkdir } from 'node:fs/promises';
 import * as esbuild from 'esbuild';
 
 import { buildBanner, metadata } from './metadata.mjs';
@@ -18,7 +18,5 @@ await esbuild.build({
     minify: false,
     banner: { js: buildBanner() },
 });
-
-await copyFile('logo.png', `${outDir}/logo.png`);
 
 console.log(`Built ${metadata.name} v${metadata.version} -> ${outDir}/`);

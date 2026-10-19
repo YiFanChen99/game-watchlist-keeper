@@ -27,7 +27,8 @@ export const metadata = {
         'script.googleusercontent.com',
         'store.steampowered.com',
     ],
-    icon: `${pagesBaseUrl}/logo.png`,
+    // Steam's own favicon; this URL carries no build hash.
+    icon: 'https://store.steampowered.com/favicon.ico',
     downloadURL: `${pagesBaseUrl}/Script.user.js`,
 };
 
