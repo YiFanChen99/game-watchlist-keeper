@@ -3,5 +3,5 @@
   "compilerOptions": {
     "types": ["tampermonkey"]
   },
-  "include": ["src"]
+  "include": ["src", "test", "vitest.config.ts"]
 }

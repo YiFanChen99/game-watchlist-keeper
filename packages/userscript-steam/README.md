@@ -32,6 +32,7 @@
 
 ```sh
 pnpm --filter @watchlist/userscript-steam check   # tsc --noEmit + ESLint
+pnpm --filter @watchlist/userscript-steam test    # vitest + happy-dom
 pnpm --filter @watchlist/userscript-steam build   # 產出 dist/Script.user.js
 ```
 

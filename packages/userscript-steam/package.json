@@ -8,7 +8,8 @@
   "type": "module",
   "scripts": {
     "build": "node scripts/build.mjs",
-    "check": "tsc --noEmit && eslint ."
+    "check": "tsc --noEmit && eslint .",
+    "test": "vitest run"
   },
   "devDependencies": {
     "@types/tampermonkey": "^5.0.4",
