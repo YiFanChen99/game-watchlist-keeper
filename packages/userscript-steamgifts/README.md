@@ -59,8 +59,11 @@
 ```sh
 pnpm install
 pnpm --filter @watchlist/userscript-steamgifts check   # tsc --noEmit + ESLint
+pnpm --filter @watchlist/userscript-steamgifts test    # vitest + happy-dom
 pnpm --filter @watchlist/userscript-steamgifts build   # 產出 dist/Script.user.js
 ```
+
+SteamGifts 擋 curl，存不到真的頁面，所以測試用的頁面是 `test/pages.ts` 手寫的，只保留標註會讀的結構。
 
 `dist/` 不進版控。push 到 `main` 後由 monorepo 根目錄的 `.github/workflows/pages.yml` 建置並發佈到 GitHub Pages。版本號照根目錄的 `version-bump` skill 調整。
 
