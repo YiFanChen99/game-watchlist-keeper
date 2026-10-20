@@ -28,7 +28,8 @@ const cases: Record<number, Expected> = {
     },
     1562430: {
         name: 'DREDGE',
-        originalPrice: 799,
+        // The base game's block, not the Digital Deluxe Edition's (799) above it.
+        originalPrice: 749,
         releaseDate: { year: 2023, month: 3, day: 30 },
         isEarlyAccess: false,
         hasDemo: false,
@@ -117,6 +118,17 @@ describe('parseStorePage', () => {
         for (const appId of Object.keys(cases)) {
             expect(parseStorePage(loadStorePage(Number(appId))).isDelisted).toBe(false);
         }
+    });
+
+    it('takes the original price of the base game on sale', () => {
+        const block = (title: string, price: string) => `
+            <div class="game_area_purchase_game"><h2 class="title">${title}</h2>
+                <div class="game_purchase_action">${price}</div></div>`;
+        const doc = new DOMParser().parseFromString(`
+            <div class="apphub_AppName">Game</div>
+            ${block('購買 Game - Deluxe Edition', '<div class="game_purchase_price price">NT$ 500</div>')}
+            ${block('購買 Game', '<div class="discount_original_price">NT$ 1,190</div><div class="discount_final_price">NT$ 595</div>')}`, 'text/html');
+        expect(parseStorePage(doc).originalPrice).toBe(1190);
     });
 
     it('lists only languages with a check mark in the interface column', () => {

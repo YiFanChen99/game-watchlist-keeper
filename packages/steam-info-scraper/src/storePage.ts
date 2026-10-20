@@ -29,12 +29,22 @@ function textOf(element: Element | null | undefined): string | null {
     return value === undefined || value === '' ? null : value;
 }
 
+/** Purchase blocks of single packages: subscription / bundle dropdowns and the demo block are skipped. */
+const purchaseBlockSelector = '.game_area_purchase_game:not(.game_area_purchase_game_dropdown_subscription):not(.demo_above_purchase)';
+const blockPriceSelector = '.game_purchase_action .discount_original_price, .game_purchase_action .game_purchase_price';
+
 /**
- * The base game's purchase block only: subscription / bundle dropdowns and the demo block are skipped.
+ * The base game's price: the purchase block titled with the game's name (`購買 DREDGE`), since an
+ * edition's block can come first (`購買 DREDGE - Digital Deluxe Edition`). Without such a block,
+ * the first block with a price.
  */
-function parseOriginalPrice(doc: ParentNode): number | null {
-    const action = '.game_area_purchase_game:not(.game_area_purchase_game_dropdown_subscription):not(.demo_above_purchase) .game_purchase_action';
-    const priceText = textOf(doc.querySelector(`${action} .discount_original_price, ${action} .game_purchase_price`));
+function parseOriginalPrice(doc: ParentNode, name: string | null): number | null {
+    const blocks = Array.from(doc.querySelectorAll(purchaseBlockSelector), block => ({
+        // Drop the verb: `購買 `, `預購 `, …
+        title: textOf(block.querySelector('.title'))?.replace(/^\S+\s+/, ''),
+        priceText: textOf(block.querySelector(blockPriceSelector)),
+    })).filter(block => block.priceText !== null);
+    const priceText = (blocks.find(block => name !== null && block.title === name) ?? blocks[0])?.priceText;
     if (!priceText) {
         return null;
     }
@@ -93,7 +103,7 @@ export function matchesFetchedStorePage(doc: Document): boolean {
         return false;
     }
     const currency = doc.querySelector('meta[itemprop="priceCurrency"]')?.getAttribute('content');
-    return currency === 'TWD' || (currency == null && parseOriginalPrice(doc) === null);
+    return currency === 'TWD' || (currency == null && parseOriginalPrice(doc, null) === null);
 }
 
 /**
@@ -104,9 +114,10 @@ export function matchesFetchedStorePage(doc: Document): boolean {
  * language. Use `parseAppReviews` instead.
  */
 export function parseStorePage(doc: ParentNode): StorePageInfo {
+    const name = textOf(doc.querySelector('.apphub_AppName'));
     return {
-        name: textOf(doc.querySelector('.apphub_AppName')),
-        originalPrice: parseOriginalPrice(doc),
+        name,
+        originalPrice: parseOriginalPrice(doc, name),
         releaseDate: findReleaseDate(doc),
         isEarlyAccess: doc.querySelector('.early_access_header') !== null,
         hasDemo: doc.querySelector('.demo_above_purchase, #demoGameBtn') !== null,

@@ -19,7 +19,7 @@ import {
  */
 const games: readonly (readonly [appId: number, label: string])[] = [
     [1145360, 'Hades：已發售、只支援簡中'],
-    [1562430, 'DREDGE：特價中（取原價）、支援繁中'],
+    [1562430, 'DREDGE：本體前面有豪華版的區塊（取本體）、支援繁中'],
     [2868840, 'Slay the Spire 2：搶先體驗'],
     [1966720, 'Lethal Company：搶先體驗、只支援英文'],
     [3669620, 'Warhammer Survivors：尚未發售、沒有價格、有 Demo、沒有評論'],

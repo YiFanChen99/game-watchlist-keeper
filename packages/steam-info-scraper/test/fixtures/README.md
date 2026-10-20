@@ -9,7 +9,7 @@
 | appid | 遊戲 | 涵蓋情境 |
 |---|---|---|
 | 1145360 | Hades | 已發售、原價、只支援簡中 |
-| 1562430 | DREDGE | 特價中（取原價）、支援繁中 |
+| 1562430 | DREDGE | 本體前面有 Digital Deluxe Edition 的區塊（取本體）、支援繁中 |
 | 2868840 | Slay the Spire 2 | 搶先體驗；頁面有帶小數價格的組合包（需排除） |
 | 1966720 | Lethal Company | 搶先體驗、只支援英文 |
 | 3669620 | Warhammer Survivors | 尚未發售、沒有價格、有 Demo、沒有評論 |
