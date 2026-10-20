@@ -1,8 +1,8 @@
 {
-  "name": "@watchlist/tampermonkey-sheet-api",
+  "name": "@watchlist/tampermonkey-requests",
   "version": "0.1.0",
   "private": true,
-  "description": "For userscripts: GM_xmlhttpRequest fetch functions, and the sheet-api client behind a token kept in Tampermonkey storage",
+  "description": "For userscripts: GM_xmlhttpRequest fetch functions, and credentials kept in Tampermonkey storage (the sheet-api token)",
   "license": "MIT",
   "type": "module",
   "sideEffects": false,

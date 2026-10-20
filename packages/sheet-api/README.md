@@ -12,6 +12,6 @@ Sheet Web App（`@watchlist/apps-script`）的協定與 client。server 和 clie
 
 - `createSheetApi({ webAppUrl, token, postText })` 回傳 `SheetApi`。`postText` 由外部注入，所以可以直接在 Node 上測試。
 - `deployedWebAppUrl`：userscript 呼叫的部署 URL。放在這裡，是因為要知道 URL 的是 client。
-- `tampermonkey-sheet-api` 負責建立 client（token 存在 Tampermonkey）。`game-record-writer`、`price-lookup` 和各支 userscript 只用 `SheetApi` 介面與錯誤型別。
+- `tampermonkey-requests` 負責建立 client（token 存在 Tampermonkey）。`game-record-writer`、`price-lookup` 和各支 userscript 只用 `SheetApi` 介面與錯誤型別。
 
 各個 action 的行為、快取與部署步驟見 [`apps-script` 的 README](../apps-script/README.md)。

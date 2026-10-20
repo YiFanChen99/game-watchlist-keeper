@@ -18,6 +18,6 @@
   "dependencies": {
     "@watchlist/game-record-writer": "workspace:*",
     "@watchlist/sheet-api": "workspace:*",
-    "@watchlist/tampermonkey-sheet-api": "workspace:*"
+    "@watchlist/tampermonkey-requests": "workspace:*"
   }
 }

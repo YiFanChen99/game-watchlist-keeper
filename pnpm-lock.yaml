@@ -87,7 +87,7 @@ importers:
         specifier: workspace:*
         version: link:../core
 
-  packages/tampermonkey-sheet-api:
+  packages/tampermonkey-requests:
     dependencies:
       '@watchlist/core':
         specifier: workspace:*
@@ -114,9 +114,9 @@ importers:
       '@watchlist/sheet-api':
         specifier: workspace:*
         version: link:../sheet-api
-      '@watchlist/tampermonkey-sheet-api':
+      '@watchlist/tampermonkey-requests':
         specifier: workspace:*
-        version: link:../tampermonkey-sheet-api
+        version: link:../tampermonkey-requests
     devDependencies:
       '@types/tampermonkey':
         specifier: ^5.0.4
@@ -133,9 +133,9 @@ importers:
       '@watchlist/sheet-api':
         specifier: workspace:*
         version: link:../sheet-api
-      '@watchlist/tampermonkey-sheet-api':
+      '@watchlist/tampermonkey-requests':
         specifier: workspace:*
-        version: link:../tampermonkey-sheet-api
+        version: link:../tampermonkey-requests
     devDependencies:
       '@types/tampermonkey':
         specifier: ^5.0.4
@@ -158,9 +158,9 @@ importers:
       '@watchlist/steam-info-scraper':
         specifier: workspace:*
         version: link:../steam-info-scraper
-      '@watchlist/tampermonkey-sheet-api':
+      '@watchlist/tampermonkey-requests':
         specifier: workspace:*
-        version: link:../tampermonkey-sheet-api
+        version: link:../tampermonkey-requests
     devDependencies:
       '@types/tampermonkey':
         specifier: ^5.0.4
@@ -183,9 +183,9 @@ importers:
       '@watchlist/sheet-api':
         specifier: workspace:*
         version: link:../sheet-api
-      '@watchlist/tampermonkey-sheet-api':
+      '@watchlist/tampermonkey-requests':
         specifier: workspace:*
-        version: link:../tampermonkey-sheet-api
+        version: link:../tampermonkey-requests
     devDependencies:
       '@types/tampermonkey':
         specifier: ^5.0.4

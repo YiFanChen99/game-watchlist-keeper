@@ -1,5 +1,5 @@
-import { createWithSheetApi } from '@watchlist/tampermonkey-sheet-api';
+import { createWithSheetApi } from '@watchlist/tampermonkey-requests';
 
-export { fetchText } from '@watchlist/tampermonkey-sheet-api';
+export { fetchText } from '@watchlist/tampermonkey-requests';
 
 export const withSheetApi = createWithSheetApi('SteamGifts Annotator');

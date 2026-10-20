@@ -20,6 +20,6 @@
     "@watchlist/game-record-writer": "workspace:*",
     "@watchlist/price-lookup": "workspace:*",
     "@watchlist/sheet-api": "workspace:*",
-    "@watchlist/tampermonkey-sheet-api": "workspace:*"
+    "@watchlist/tampermonkey-requests": "workspace:*"
   }
 }
