@@ -19,7 +19,11 @@ export const metadata = {
     version: pkg.version,
     description: pkg.description,
     author: pkg.author,
-    match: ['*://store.steampowered.com/app/*'],
+    match: [
+        '*://store.steampowered.com/app/*',
+        // The setup page, where the token and API key are entered once for every script.
+        'https://yifanchen99.github.io/game-watchlist-keeper/setup.html',
+    ],
     grant: ['GM_xmlhttpRequest', 'GM_getValue', 'GM_setValue', 'GM_deleteValue', 'GM_setClipboard'],
     connect: [
         'script.google.com',

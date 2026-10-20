@@ -1,5 +1,8 @@
+import { itadApiKeyKey, runSetupPage, tokenKey } from '@watchlist/tampermonkey-requests';
+
 import { HeaderModifier, RegionModifier } from './domModifier';
 import { fetchData, getOrFetchData, markUpdated, refetchGame } from './sheetFetcher';
+import { scriptName } from './tampermonkey';
 
 /**
  * User localstorage keys:
@@ -7,6 +10,7 @@ import { fetchData, getOrFetchData, markUpdated, refetchGame } from './sheetFetc
  *  ekkoGamesRegions: Record<string, { value, time }>
  * Tampermonkey storage keys:
  *  sheetApiToken: the token the Apps Script web app checks
+ *  itadApiKey: the IsThereAnyDeal API key 最低off is taken with
  */
 async function main(): Promise<void> {
     let sheetData = await getOrFetchData();
@@ -73,6 +77,8 @@ async function main(): Promise<void> {
     }
 }
 
-main().catch((error: unknown) => {
-    console.error('SteamGifts Annotator:', error);
-});
+if (!runSetupPage(scriptName, [tokenKey, itadApiKeyKey])) {
+    main().catch((error: unknown) => {
+        console.error('SteamGifts Annotator:', error);
+    });
+}

@@ -7,10 +7,11 @@ import {
     type SheetRowStore,
 } from '@watchlist/game-record-writer';
 import { SheetApiError, type NumberedRowResponse, type SheetApi } from '@watchlist/sheet-api';
+import { itadApiKeyKey, runSetupPage, tokenKey } from '@watchlist/tampermonkey-requests';
 
 import { Panel } from './panel';
 import { parseSelectedRow, parseSheetLocation, showsRefreshButton, type SheetLocation } from './selection';
-import { fetchText, itadApiKey, withSheetApi } from './tampermonkey';
+import { fetchText, itadApiKey, scriptName, withSheetApi } from './tampermonkey';
 import { parseHtml } from './trustedHtml';
 
 /**
@@ -149,4 +150,6 @@ function main(): void {
     setInterval(showOnWatchlistSheet, locationCheckIntervalMs);
 }
 
-main();
+if (!runSetupPage(scriptName, [tokenKey, itadApiKeyKey])) {
+    main();
+}

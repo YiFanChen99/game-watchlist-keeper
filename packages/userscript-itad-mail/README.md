@@ -6,7 +6,7 @@
 
 1. 安裝 [Tampermonkey](https://chrome.google.com/webstore/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo)。
 2. 打開 <https://yifanchen99.github.io/game-watchlist-keeper/itad-mail/Script.user.js>，按 `Install`。
-3. 第一次在 Gmail 打開 ITAD 的信時，輸入 Sheet API 的 token（Apps Script 專案設定裡的 `API_TOKEN`）。
+3. 到[設定頁](https://yifanchen99.github.io/game-watchlist-keeper/setup.html)輸入 Sheet API 的 token（Apps Script 專案設定裡的 `API_TOKEN`），一次存進每支已安裝的腳本；這支只存 token。沒設定的話，第一次在 Gmail 打開 ITAD 的信時會跳出輸入框。
 
 ## Usage
 

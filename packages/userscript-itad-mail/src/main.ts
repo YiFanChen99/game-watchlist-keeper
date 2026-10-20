@@ -1,5 +1,8 @@
+import { runSetupPage, tokenKey } from '@watchlist/tampermonkey-requests';
+
 import { annotate, findGames } from './annotator';
 import { SheetLookup } from './sheet';
+import { scriptName } from './tampermonkey';
 
 /**
  * Gmail renders each opened mail on the fly, so watch the page and annotate the games of every
@@ -28,4 +31,6 @@ function main(): void {
     scan();
 }
 
-main();
+if (!runSetupPage(scriptName, [tokenKey])) {
+    main();
+}

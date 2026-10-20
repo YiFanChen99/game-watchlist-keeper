@@ -20,7 +20,11 @@ export const metadata = {
     description: pkg.description,
     author: pkg.author,
     // Every spreadsheet: the sheet's URL stays out of this public repo. The web app's row link tells which one it is.
-    match: ['https://docs.google.com/spreadsheets/d/*'],
+    match: [
+        'https://docs.google.com/spreadsheets/d/*',
+        // The setup page, where the token and API key are entered once for every script.
+        'https://yifanchen99.github.io/game-watchlist-keeper/setup.html',
+    ],
     // Sheets embeds frames of its own; the button belongs on the top page only.
     noframes: '',
     grant: ['GM_xmlhttpRequest', 'GM_getValue', 'GM_setValue', 'GM_deleteValue'],

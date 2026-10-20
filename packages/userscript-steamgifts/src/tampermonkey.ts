@@ -1,7 +1,10 @@
 import { createItadApiKey, createWithSheetApi } from '@watchlist/tampermonkey-requests';
 
+/** Starts its prompts and its line on the setup page. */
+export const scriptName = 'SteamGifts Annotator';
+
 export { fetchText } from '@watchlist/tampermonkey-requests';
 
-export const withSheetApi = createWithSheetApi('SteamGifts Annotator');
+export const withSheetApi = createWithSheetApi(scriptName);
 
-export const itadApiKey = createItadApiKey('SteamGifts Annotator');
+export const itadApiKey = createItadApiKey(scriptName);

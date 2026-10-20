@@ -33,6 +33,6 @@ pnpm -r test    # vitest
 pnpm -r build   # 產出各 userscript 的 dist/
 ```
 
-push 到 `main` 後由 `.github/workflows/pages.yml` 建置，將每支 userscript 發佈到 GitHub Pages 的 `/<網站>/Script.user.js`。
+push 到 `main` 後由 `.github/workflows/pages.yml` 建置，將每支 userscript 發佈到 GitHub Pages 的 `/<網站>/Script.user.js`。另有[設定頁](https://yifanchen99.github.io/game-watchlist-keeper/setup.html)（`/setup.html`）：輸入一次 Sheet token 與 ITAD API key，就存進每支已安裝的腳本。
 
 `pnpm prune-pages [N]` 刪掉舊的 Pages deployment 與 workflow run，各留最新 N 筆，預設 10（需先 `gh auth login`）。

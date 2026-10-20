@@ -17,8 +17,8 @@
 
 1. Install [Tampermonkey](https://chrome.google.com/webstore/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo) (Chrome) or [Violentmonkey](https://addons.mozilla.org/en-us/firefox/addon/violentmonkey/) (Firefox).
 2. Open [`https://yifanchen99.github.io/game-watchlist-keeper/steam/Script.user.js`](https://yifanchen99.github.io/game-watchlist-keeper/steam/Script.user.js) and click `Install`.
-3. 第一次在 Steam 商店頁執行時，輸入 Sheet API 的 token（Apps Script 專案設定裡的 `API_TOKEN`）。token 存在這支腳本自己的儲存空間，跟 SteamGifts 那支分開。
-4. 第一次按新增或更新時，輸入 IsThereAnyDeal 的 API key（在 ITAD 註冊的 app 的 API Key，不是 OAuth 的 Client ID / Secret），存在 `itadApiKey`。取消的話最低off 只看 SteamDB 區塊，下次再問；ITAD 拒絕時會刪掉，下次再問。
+3. 到[設定頁](https://yifanchen99.github.io/game-watchlist-keeper/setup.html)輸入 Sheet API 的 token（Apps Script 專案設定裡的 `API_TOKEN`）和 IsThereAnyDeal 的 API key（在 ITAD 註冊的 app 的 API Key，不是 OAuth 的 Client ID / Secret），按一次儲存，每支已安裝的腳本都會存進自己的儲存空間。
+   - 沒設定的話，第一次用到時會跳出輸入框。ITAD key 取消的話最低off 只看 SteamDB 區塊，下次再問；token 或 key 被拒絕時會刪掉，下次再問。
 
 ## Usage
 

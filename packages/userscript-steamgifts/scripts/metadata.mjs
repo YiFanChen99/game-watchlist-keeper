@@ -22,6 +22,8 @@ export const metadata = {
     match: [
         '*://www.steamgifts.com/giveaways/search*',
         '*://www.steamgifts.com/giveaway/*',
+        // The setup page, where the token and API key are entered once for every script.
+        'https://yifanchen99.github.io/game-watchlist-keeper/setup.html',
     ],
     grant: ['GM_xmlhttpRequest', 'GM_getValue', 'GM_setValue', 'GM_deleteValue'],
     connect: [

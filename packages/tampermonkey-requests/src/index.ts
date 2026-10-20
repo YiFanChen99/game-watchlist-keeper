@@ -6,11 +6,10 @@ import {
     type SheetApi,
 } from '@watchlist/sheet-api';
 
-/** Tampermonkey storage key of the token the web app checks. */
-export const tokenKey = 'sheetApiToken';
+import { itadApiKeyKey, tokenKey } from './storageKeys';
 
-/** Tampermonkey storage key of the IsThereAnyDeal API key. */
-export const itadApiKeyKey = 'itadApiKey';
+export { itadApiKeyKey, tokenKey } from './storageKeys';
+export { runSetupPage, setupPageIds, setupPageUrl, type SetupSecret } from './setupPage';
 
 /** A secret kept in Tampermonkey storage, asked for the first time it is needed. */
 interface StoredSecret {

@@ -8,7 +8,7 @@
 
 1. 安裝 [Tampermonkey](https://chrome.google.com/webstore/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo)。
 2. 打開 <https://yifanchen99.github.io/game-watchlist-keeper/sheet/Script.user.js>，按 `Install`。
-3. 第一次按 ↻ 時，輸入 Sheet API 的 token（Apps Script 專案設定裡的 `API_TOKEN`）和 IsThereAnyDeal 的 API key（最低off 用；取消的話最低off 不更新，下次再問），並允許連線到 `store.steampowered.com`、`api.isthereanydeal.com`。
+3. 到[設定頁](https://yifanchen99.github.io/game-watchlist-keeper/setup.html)輸入 Sheet API 的 token（Apps Script 專案設定裡的 `API_TOKEN`）和 IsThereAnyDeal 的 API key（最低off 用），一次存進每支已安裝的腳本；沒設定的話，第一次按 ↻ 時會跳出輸入框，ITAD key 取消的話最低off 不更新，下次再問。第一次按 ↻ 時允許連線到 `store.steampowered.com`、`api.isthereanydeal.com`。
 
 需要 web app 支援用列號讀單列（`action=row&row=`）；舊版 web app 會回「bad app id」。
 

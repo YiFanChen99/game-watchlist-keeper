@@ -1,3 +1,6 @@
 import { createWithSheetApi } from '@watchlist/tampermonkey-requests';
 
-export const withSheetApi = createWithSheetApi('ITAD Mail Annotator');
+/** Starts its prompts and its line on the setup page. */
+export const scriptName = 'ITAD Mail Annotator';
+
+export const withSheetApi = createWithSheetApi(scriptName);

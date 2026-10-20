@@ -19,7 +19,7 @@
 1. Install [Violentmonkey](https://addons.mozilla.org/en-us/firefox/addon/violentmonkey/) (Firefox) or [Tampermonkey](https://chrome.google.com/webstore/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo) (Chrome) / [Tampermonkey](https://addons.opera.com/en/extensions/details/tampermonkey-beta/) (Opera).
 2. Open `https://yifanchen99.github.io/game-watchlist-keeper/steamgifts/Script.user.js` or click [here](https://yifanchen99.github.io/game-watchlist-keeper/steamgifts/Script.user.js)
 3. Click `Install`.
-4. 第一次在 SteamGifts 上執行時，輸入 Sheet API 的 token（Apps Script 專案設定裡的 `API_TOKEN`）。第一次按 ↻ 時，輸入 IsThereAnyDeal 的 API key（最低off 用；取消的話最低off 不更新，下次再問）。
+4. 到[設定頁](https://yifanchen99.github.io/game-watchlist-keeper/setup.html)輸入 Sheet API 的 token（Apps Script 專案設定裡的 `API_TOKEN`）和 IsThereAnyDeal 的 API key（最低off 用），一次存進每支已安裝的腳本。沒設定的話，第一次用到時會跳出輸入框；ITAD key 取消的話最低off 不更新，下次再問。
 
 ## Usage
 

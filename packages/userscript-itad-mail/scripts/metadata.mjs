@@ -19,7 +19,11 @@ export const metadata = {
     version: pkg.version,
     description: pkg.description,
     author: pkg.author,
-    match: ['https://mail.google.com/*'],
+    match: [
+        'https://mail.google.com/*',
+        // The setup page, where the token and API key are entered once for every script.
+        'https://yifanchen99.github.io/game-watchlist-keeper/setup.html',
+    ],
     grant: ['GM_xmlhttpRequest', 'GM_getValue', 'GM_setValue', 'GM_deleteValue', 'GM_openInTab'],
     connect: [
         'script.google.com',
