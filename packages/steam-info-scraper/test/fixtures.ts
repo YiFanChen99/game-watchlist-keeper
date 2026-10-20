@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-import type { FetchText } from '@watchlist/core';
+import { HttpStatusError, type FetchText } from '@watchlist/core';
 
 const dir = join(import.meta.dirname, 'fixtures');
 
@@ -50,7 +50,7 @@ const itadGameApps = new Map(itadLookupApps.flatMap((appId) => {
 /** Serves the saved ITAD lookups and histories; an app without a saved lookup is not known to ITAD. */
 function fetchItadFixture(url: URL, headers: Record<string, string> | undefined): Promise<string> {
     if (headers?.['ITAD-API-Key'] !== fixtureItadApiKey) {
-        return Promise.reject(new Error(`Failed to GET ${url.origin}${url.pathname}: 403`));
+        return Promise.reject(new HttpStatusError(`Failed to GET ${url.origin}${url.pathname}: 403`, 403));
     }
     if (url.pathname === '/games/lookup/v1') {
         const appId = Number(url.searchParams.get('appid'));

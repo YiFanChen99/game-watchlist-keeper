@@ -2,7 +2,7 @@
   "name": "@watchlist/tampermonkey-requests",
   "version": "0.1.0",
   "private": true,
-  "description": "For userscripts: GM_xmlhttpRequest fetch functions, and credentials kept in Tampermonkey storage (the sheet-api token)",
+  "description": "For userscripts: GM_xmlhttpRequest fetch functions, and credentials kept in Tampermonkey storage (the sheet-api token, the IsThereAnyDeal API key)",
   "license": "MIT",
   "type": "module",
   "sideEffects": false,
