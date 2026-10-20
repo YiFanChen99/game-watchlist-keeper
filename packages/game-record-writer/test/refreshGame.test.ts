@@ -7,6 +7,7 @@ import {
     Column,
     extractPlaytime,
     fetchPlaytime,
+    formatLowestOffNote,
     refreshGame,
     refreshReadColumns,
     sheetApiRowStore,
@@ -160,5 +161,25 @@ describe('fetchPlaytime', () => {
         const { updates } = await refreshGame(2868840, { fetchText: fixtureFetchText, store: fakeStore({}).store });
         expect(playtime).toBe(extractPlaytime(String(updates[Column.detail])));
         expect(playtime).toMatch(/^中位\d+H，PR\d+ \d+H。$/);
+    });
+});
+
+describe('formatLowestOffNote', () => {
+    const records = { itadHistory: [], itadError: null };
+    const none = { itadHistory: null, itadError: null };
+    const context = { action: 'refresh', hasItadApiKey: true, isItadApiKeyRefused: false, hasSteamDb: false } as const;
+
+    it('says nothing when ITAD answered', () => {
+        expect(formatLowestOffNote(records, context)).toBeNull();
+    });
+
+    it('tells why ITAD gave nothing, and what 最低off went by instead', () => {
+        expect(formatLowestOffNote(none, { ...context, hasItadApiKey: false }))
+            .toBe('沒有 ITAD 的 API key，也沒有 SteamDB 區塊，最低off 沒有更新（原本是數字的話前面加上 !，表示可能過時）。');
+        expect(formatLowestOffNote(none, { ...context, action: 'add' })).toBe('ITAD 沒有這個遊戲，也沒有 SteamDB 區塊，最低off 寫 0。');
+        expect(formatLowestOffNote({ itadHistory: null, itadError: new Error('Failed: 429') }, { ...context, hasSteamDb: true }))
+            .toBe('ITAD 沒有回應（Failed: 429），最低off 只看 SteamDB 區塊，前面加上 !。');
+        expect(formatLowestOffNote({ itadHistory: null, itadError: new Error('Failed: 403') }, { ...context, isItadApiKeyRefused: true }))
+            .toMatch(/^ITAD 拒絕了 API key（下次會重新詢問），/);
     });
 });

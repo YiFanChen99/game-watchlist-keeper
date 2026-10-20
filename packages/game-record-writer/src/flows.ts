@@ -11,7 +11,7 @@ import {
 
 import type { ColumnName, SheetRowValues } from './columns';
 import { formatPlaytime } from './detail';
-import { planLowestOff } from './lowestOff';
+import { defaultLowestOff, planLowestOff } from './lowestOff';
 import { computePlaytimeStats } from './playtime';
 import { planNewRow } from './newRow';
 import { planRefresh, refreshReadColumns, type RefreshPlan } from './refresh';
@@ -53,7 +53,7 @@ export interface RefreshDeps {
     /** The SteamDB block (`readSteamDbPrices`), where the page has one; see `planLowestOff`. */
     steamDb?: SteamDbPrices | null;
     /** IsThereAnyDeal's API key; without it, 最低off goes by the SteamDB block alone. */
-    itadApiKey?: string;
+    itadApiKey?: string | undefined;
     /**
      * The app's store page, when the caller is on it (userscript-steam): parsed instead of
      * fetched when it reads the same as a fetched one (`matchesFetchedStorePage`: 繁中, TWD).
@@ -79,6 +79,42 @@ async function fetchItad(appId: number, deps: RefreshDeps): Promise<ItadOutcome>
     } catch (error) {
         return { itadHistory: null, itadError: error instanceof Error ? error : new Error(String(error)) };
     }
+}
+
+export interface LowestOffNoteContext {
+    /** Whether the row was added (a missing lowest price writes `defaultLowestOff`) or refreshed. */
+    action: 'add' | 'refresh';
+    /** Whether ITAD was asked: false without an API key. */
+    hasItadApiKey: boolean;
+    /** Whether ITAD refused the key, e.g. `ItadApiKey.forgetIfRefused`. */
+    isItadApiKeyRefused: boolean;
+    /** Whether the SteamDB block was read. */
+    hasSteamDb: boolean;
+}
+
+/**
+ * The line a userscript shows when 最低off had no ITAD records to go by.
+ *
+ * @returns e.g. `沒有 ITAD 的價格紀錄，也沒有 SteamDB 區塊，最低off 沒有更新（…）。`; `null` when ITAD answered.
+ */
+export function formatLowestOffNote(
+    { itadHistory, itadError }: ItadOutcome,
+    { action, hasItadApiKey, isItadApiKeyRefused, hasSteamDb }: LowestOffNoteContext,
+): string | null {
+    if (itadHistory !== null) {
+        return null;
+    }
+    const reason = isItadApiKeyRefused
+        ? 'ITAD 拒絕了 API key（下次會重新詢問）'
+        : itadError
+            ? `ITAD 沒有回應（${itadError.message}）`
+            : hasItadApiKey ? 'ITAD 沒有這個遊戲' : '沒有 ITAD 的 API key';
+    if (hasSteamDb) {
+        return `${reason}，最低off 只看 SteamDB 區塊，前面加上 !。`;
+    }
+    return action === 'add'
+        ? `${reason}，也沒有 SteamDB 區塊，最低off 寫 ${defaultLowestOff}。`
+        : `${reason}，也沒有 SteamDB 區塊，最低off 沒有更新（原本是數字的話前面加上 !，表示可能過時）。`;
 }
 
 export interface RefreshResult extends RefreshPlan, ItadOutcome {}

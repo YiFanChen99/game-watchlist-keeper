@@ -35,10 +35,12 @@ export { buildNameFormula, MissingValueError, planNewRow, unratedWantLevel, type
 export {
     addGame,
     fetchPlaytime,
+    formatLowestOffNote,
     refreshGame,
     sheetApiRowStore,
     type AddResult,
     type ItadOutcome,
+    type LowestOffNoteContext,
     type RefreshDeps,
     type RefreshResult,
     type SheetRowStore,

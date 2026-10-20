@@ -40,15 +40,6 @@ function isMostWanted(game: SheetGame): boolean {
     return ['4', '5'].includes(String(game.K).trim());
 }
 
-/**
- * Whether ↻ may refresh this game's row: not when its 購買/期待度 is 4 or 5. A defence for now:
- * a refresh here cannot fetch 最低off, which SteamGifts pages have no SteamDB block for, so it would
- * only mark the most wanted games' 最低off as outdated.
- */
-function isRefreshable(game: SheetGame): boolean {
-    return !isMostWanted(game);
-}
-
 /** The app ids whose prices the header's 🔍 looks up: those of its games with 購買/期待度 4 or 5. */
 function priceAppIdsOf(games: SheetGame[]): number[] {
     return appIdsOf(games.filter(isMostWanted));
@@ -187,7 +178,7 @@ export class HeaderModifier {
 
         const want = HeaderDisplayFormatter.toWant(games);
         const year = HeaderDisplayFormatter.toUpdateYear(games);
-        const refresh = year && games.every(isRefreshable)
+        const refresh = year
             ? this.refreshButtonFor(headerElement, annotation)
             : undefined;
         const price = priceAppIdsOf(games).length ? this.priceButtonFor(headerElement, annotation) : undefined;

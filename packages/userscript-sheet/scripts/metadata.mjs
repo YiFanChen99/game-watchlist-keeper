@@ -28,8 +28,10 @@ export const metadata = {
         'script.google.com',
         // Apps Script web apps 302-redirect /exec responses here.
         'script.googleusercontent.com',
-        // The refresh reads the store page and its reviews.
+        // The refresh reads the store page and its reviews,
         'store.steampowered.com',
+        // and 最低off from ITAD's lowest price.
+        'api.isthereanydeal.com',
     ],
     // Google Sheets' own favicon; this URL carries no build hash.
     icon: 'https://ssl.gstatic.com/docs/spreadsheets/spreadsheets_2023q4.ico',

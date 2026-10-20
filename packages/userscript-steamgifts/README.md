@@ -19,7 +19,7 @@
 1. Install [Violentmonkey](https://addons.mozilla.org/en-us/firefox/addon/violentmonkey/) (Firefox) or [Tampermonkey](https://chrome.google.com/webstore/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo) (Chrome) / [Tampermonkey](https://addons.opera.com/en/extensions/details/tampermonkey-beta/) (Opera).
 2. Open `https://yifanchen99.github.io/game-watchlist-keeper/steamgifts/Script.user.js` or click [here](https://yifanchen99.github.io/game-watchlist-keeper/steamgifts/Script.user.js)
 3. Click `Install`.
-4. 第一次在 SteamGifts 上執行時，輸入 Sheet API 的 token（Apps Script 專案設定裡的 `API_TOKEN`）。
+4. 第一次在 SteamGifts 上執行時，輸入 Sheet API 的 token（Apps Script 專案設定裡的 `API_TOKEN`）。第一次按 ↻ 時，輸入 IsThereAnyDeal 的 API key（最低off 用；取消的話最低off 不更新，下次再問）。
 
 ## Usage
 
@@ -33,11 +33,11 @@
 
 **🔍 查價**：對到的遊戲有 AppID、且購買/期待度是 4 或 5 時，期待度的括號裡有一個線條放大鏡（跟標註同色，不是彩色 emoji），例如 `(W4🔍)`。按下去才用 web app 的單列查詢，以 AppID 讀 Sheet 的 目標價 與最低$，在旁邊顯示 `$50, 史$90`（`$` 是想要的價格，`史$` 是史低價，跟 `userscript-itad-mail` 的順序相同；對到多款時只查 4 或 5 的那幾款，用 ` / ` 隔開），1 分鐘後或點一下就消失；錯誤訊息保留到點掉為止。價格來自 `@watchlist/price-lookup`，四捨五入成整數，空白的格子顯示 `-`，過時的史低價（最低off 有 `!`）顯示成 `史$!90`。
 
-**↻ 刷新**：標註裡有年份（`(Y19)`，或從沒更新過的 `(Y-)`）、遊戲的 Steam 連結有 AppID（組合包的 `sub/` 連結沒有），而且對到的遊戲 購買/期待度 都不是 4 或 5 時（這裡抓不到最低off，最想要的這兩種先不刷新，免得它們的最低off 被標成過時；對到多款時只要有一款是 4 或 5 就沒有 ↻），↻ 放在年份的括號裡，例如 `(W4) (Y19↻)`。按下去會抓 Steam 商店頁與評論，照 `@watchlist/game-record-writer` 的規則（`COLUMNS.md`）寫回 Sheet 的那一列，結果顯示在按鈕旁：
+**↻ 刷新**：標註裡有年份（`(Y19)`，或從沒更新過的 `(Y-)`）、遊戲的 Steam 連結有 AppID（組合包的 `sub/` 連結沒有）時，↻ 放在年份的括號裡，例如 `(W4) (Y19↻)`。按下去會抓 Steam 商店頁與評論，照 `@watchlist/game-record-writer` 的規則（`COLUMNS.md`）寫回 Sheet 的那一列，結果顯示在按鈕旁：
 
 - 成功：`已更新。` 加上變動（例如 `原價 400 → 408（+8）`），1 分鐘後或點一下就消失。標註與 localStorage 的 `ekkoGames` 會跟著改成今天更新，不重抓整張表，所以年份和 ↻ 一起消失。
 - Sheet 沒有這款遊戲：只提示，不新增（新增在 Steam 商店頁用 `userscript-steam` 做）。這個訊息和錯誤訊息都保留到點掉為止。
-- 最低off 不會更新：SteamGifts 上沒有 SteamDB 區塊。舊值是數字時會改成 `!<舊值>`，表示可能過時（規則見 `game-record-writer` 的 COLUMNS.md「最低off」）。
+- 最低off 取自 ITAD（SteamGifts 上沒有 SteamDB 區塊）。ITAD 拿不到時（沒有 key、失敗或沒收錄）不會更新，舊值是數字時改成 `!<舊值>`，表示可能過時，並在結果裡說明原因（規則見 `game-record-writer` 的 COLUMNS.md「最低off」）。
 
 **⟲ 重新讀取**：每個標註最後都有，在 Sheet 手動改了、新增或補好這款遊戲後按：
 
@@ -77,6 +77,7 @@ metadata block 的唯一來源是 `scripts/metadata.mjs`，build 時產生。省
 
 - `fetchText` / `postText`：用 `GM_xmlhttpRequest` 實作，注入給 library。
 - `withSheetApi()`：web app 需要 token。第一次使用時跳出輸入框，存進 Tampermonkey 的 `sheetApiToken`；token 被拒絕時會清掉並再問一次。
+- `itadApiKey`：ITAD 的 API key，第一次按 ↻ 時跳出輸入框，存進 `itadApiKey`；ITAD 拒絕時清掉，下次再問。
 
 #### `src/sheetFetcher.ts` — 取資料
 

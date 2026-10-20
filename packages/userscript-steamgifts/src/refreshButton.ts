@@ -26,9 +26,9 @@ export class RefreshButton {
         this.bubble.show('', false);
         try {
             const today = new Date();
-            const { name, changes } = await refreshRow(this.appId, today);
+            const { name, changes, notes } = await refreshRow(this.appId, today);
             this.onRefreshed(name, today);
-            this.bubble.show(['已更新。', ...changes.map(formatChange)].join('\n'), false);
+            this.bubble.show(['已更新。', ...changes.map(formatChange), ...notes].join('\n'), false);
         } catch (error) {
             if (error instanceof SheetApiError && error.code === 'not-found') {
                 // Nothing was written: keep it shown, like a failure.

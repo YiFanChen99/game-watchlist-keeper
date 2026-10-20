@@ -26,6 +26,8 @@ export const metadata = {
         // Apps Script web apps 302-redirect /exec responses here.
         'script.googleusercontent.com',
         'store.steampowered.com',
+        // 最低off's lowest price.
+        'api.isthereanydeal.com',
     ],
     // Steam's own favicon; this URL carries no build hash.
     icon: 'https://store.steampowered.com/favicon.ico',

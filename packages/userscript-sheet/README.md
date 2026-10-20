@@ -8,7 +8,7 @@
 
 1. 安裝 [Tampermonkey](https://chrome.google.com/webstore/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo)。
 2. 打開 <https://yifanchen99.github.io/game-watchlist-keeper/sheet/Script.user.js>，按 `Install`。
-3. 第一次按 ↻ 時，輸入 Sheet API 的 token（Apps Script 專案設定裡的 `API_TOKEN`），並允許連線到 `store.steampowered.com`。
+3. 第一次按 ↻ 時，輸入 Sheet API 的 token（Apps Script 專案設定裡的 `API_TOKEN`）和 IsThereAnyDeal 的 API key（最低off 用；取消的話最低off 不更新，下次再問），並允許連線到 `store.steampowered.com`、`api.isthereanydeal.com`。
 
 需要 web app 支援用列號讀單列（`action=row&row=`）；舊版 web app 會回「bad app id」。
 
@@ -42,9 +42,9 @@ Google Sheets 的 CSP 要求 Trusted Types（`require-trusted-types-for 'script'
 
 按下去之後，流程第 3 步還會再比對一次 web app 回傳的那一列連結，所以就算按鈕出現在不對的地方，也不會寫錯列。
 
-### 最低off 沒辦法更新
+### 最低off 只看 ITAD
 
-最低off 來自 SteamDB 擴充在 Steam 商店頁上加的區塊，只有開著商店頁的腳本（`userscript-steam`）讀得到；Sheet 上和 SteamGifts 上都沒有。所以這裡跟 `userscript-steamgifts` 一樣，`refreshGame` 不傳 `steamDb`，最低off 保留舊值，但舊值是數字時會改成 `!<舊值>`，表示可能過時（規則見 `game-record-writer` 的 COLUMNS.md「最低off」）。要更新最低off，得到 Steam 商店頁按 ↻。
+SteamDB 擴充的區塊只在 Steam 商店頁上（`userscript-steam` 讀得到），Sheet 上沒有，所以這裡跟 `userscript-steamgifts` 一樣，`refreshGame` 只傳 ITAD 的 API key。ITAD 拿不到時（沒有 key、失敗或沒收錄）最低off 保留舊值，但舊值是數字時會改成 `!<舊值>`，表示可能過時，並在結果裡說明原因（規則見 `game-record-writer` 的 COLUMNS.md「最低off」）。
 
 ## Development
 

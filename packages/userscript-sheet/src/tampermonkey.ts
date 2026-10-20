@@ -1,5 +1,7 @@
-import { createWithSheetApi } from '@watchlist/tampermonkey-requests';
+import { createItadApiKey, createWithSheetApi } from '@watchlist/tampermonkey-requests';
 
 export { fetchText } from '@watchlist/tampermonkey-requests';
 
 export const withSheetApi = createWithSheetApi('Sheet Row Updater');
+
+export const itadApiKey = createItadApiKey('Sheet Row Updater');

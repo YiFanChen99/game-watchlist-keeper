@@ -1,6 +1,7 @@
 import {
     Column,
     formatChange,
+    formatLowestOffNote,
     refreshGame,
     refreshReadColumns,
     type SheetRowStore,
@@ -9,12 +10,13 @@ import { SheetApiError, type NumberedRowResponse, type SheetApi } from '@watchli
 
 import { Panel } from './panel';
 import { parseSelectedRow, parseSheetLocation, showsRefreshButton, type SheetLocation } from './selection';
-import { fetchText, withSheetApi } from './tampermonkey';
+import { fetchText, itadApiKey, withSheetApi } from './tampermonkey';
 import { parseHtml } from './trustedHtml';
 
 /**
  * Tampermonkey storage keys:
  *  sheetApiToken: the token the Apps Script web app checks
+ *  itadApiKey: the IsThereAnyDeal API key 最低off is taken with
  *  watchlistSpreadsheetId: the spreadsheet the web app writes, learnt on the first refresh;
  *    from then on the button shows only there
  */
@@ -58,9 +60,10 @@ function selectedRowStore(api: SheetApi, target: NumberedRowResponse): SheetRowS
     };
 }
 
-/** Refresh the selected row from Steam; 最低off is left alone, as Sheets has no SteamDB block. */
+/** Refresh the selected row from Steam, with 最低off from ITAD (Sheets has no SteamDB block). */
 async function refreshSelectedRow(page: SheetLocation): Promise<string> {
     const row = readSelectedRow();
+    const key = itadApiKey.get();
     return withSheetApi(async (api) => {
         let target;
         try {
@@ -75,9 +78,9 @@ async function refreshSelectedRow(page: SheetLocation): Promise<string> {
             throw new RefusalError('這裡不是遊戲清單的工作表，沒有更新。');
         }
         GM_setValue(spreadsheetIdKey, page.spreadsheetId);
-        let changes;
+        let result;
         try {
-            ({ changes } = await refreshGame(target.appId, { fetchText, store: selectedRowStore(api, target), parseHtml }));
+            result = await refreshGame(target.appId, { fetchText, store: selectedRowStore(api, target), parseHtml, itadApiKey: key });
         } catch (error) {
             if (error instanceof SheetApiError && error.code === 'not-found') {
                 throw new RefusalError(`第 ${row} 列已經不是這款遊戲（可能插入或刪除了列），沒有更新。`);
@@ -85,7 +88,13 @@ async function refreshSelectedRow(page: SheetLocation): Promise<string> {
             throw error;
         }
         const name = String(target.values[Column.name] ?? '');
-        return [`已更新第 ${row} 列 ${name}。`, ...changes.map(formatChange)].join('\n');
+        const note = formatLowestOffNote(result, {
+            action: 'refresh',
+            hasItadApiKey: key !== undefined,
+            isItadApiKeyRefused: itadApiKey.forgetIfRefused(result.itadError),
+            hasSteamDb: false,
+        });
+        return [`已更新第 ${row} 列 ${name}。`, ...result.changes.map(formatChange), ...(note === null ? [] : [note])].join('\n');
     });
 }
 

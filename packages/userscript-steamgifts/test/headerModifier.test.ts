@@ -119,20 +119,11 @@ describe('HeaderModifier year mark and buttons', () => {
         expect(annotateTacoma({ G: longAgo }, bundleUrl)).toBe(' (W3) (Y19) ⟲');
     });
 
-    it('gives a want level of 4 or 5 a magnifier instead of a ↻', () => {
-        expect(annotateTacoma({ K: 4, G: longAgo })).toBe(' (W4) (Y19) ⟲');
+    it('gives a want level of 4 or 5 a magnifier, and a ↻ like any other', () => {
+        expect(annotateTacoma({ K: 4, G: longAgo })).toBe(' (W4) (Y19↻) ⟲');
         expect(document.querySelector('.ekko-annotation button svg')).not.toBeNull();
         expect(annotateTacoma({ K: 3, G: longAgo })).toBe(' (W3) (Y19↻) ⟲');
         expect(document.querySelector('.ekko-annotation button svg')).toBeNull();
-    });
-
-    it('has no ↻ when any matched game has a want level of 4 or 5', () => {
-        document.body.innerHTML = listPage([{ name: 'LISA', steamUrl: tacomaUrl }]);
-        modifierFor([
-            { B: 'LISA: The Joyful', K: 3, G: longAgo },
-            { B: 'LISA: The Painful', K: 5, G: longAgo },
-        ]).modifyGiveaways();
-        expect(annotationText('LISA')).toBe(' (W3/5) (Y19) ⟲');
     });
 });
 
@@ -142,14 +133,15 @@ describe('HeaderModifier ↻', () => {
         modifierFor([{ B: 'Tacoma', K: 3, G: longAgo, appId: 343860 }]).modifyGiveaways();
     });
 
-    it('refreshes the row, reports the changes and the written date', async () => {
+    it('refreshes the row, reports the changes, notes and the written date', async () => {
         vi.mocked(refreshRow).mockResolvedValue({
             name: 'Tacoma',
             changes: [{ column: Column.originalPrice, oldValue: 459, newValue: 499, delta: 40 }],
+            notes: ['ITAD 沒有這個遊戲，也沒有 SteamDB 區塊，最低off 沒有更新。'],
         });
         buttonOf('Tacoma', '↻')?.click();
         await vi.waitFor(() => {
-            expect(shownMessages()).toEqual([`已更新。\n${Column.originalPrice} 459 → 499（+40）`]);
+            expect(shownMessages()).toEqual([`已更新。\n${Column.originalPrice} 459 → 499（+40）\nITAD 沒有這個遊戲，也沒有 SteamDB 區塊，最低off 沒有更新。`]);
         });
         expect(refreshRow).toHaveBeenCalledWith(343860, expect.any(Date));
         expect(onRefreshed).toHaveBeenCalledWith('Tacoma', expect.any(Date));

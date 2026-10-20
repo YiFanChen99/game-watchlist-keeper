@@ -9,7 +9,7 @@ pnpm workspace monorepo，每個 `packages/*` 都是獨立的 node module，以 
 | package | 類型 | 說明 |
 |---|---|---|
 | [`core`](packages/core/) | library | 共用的小工具：名稱正規化與比對、AppID 與商店網址、fetch 函式型別 |
-| [`steam-info-scraper`](packages/steam-info-scraper/) | library | 抓 Steam 並解析成原始資料（商店頁、評論、SteamDB 區塊），不含 Sheet 格式 |
+| [`steam-info-scraper`](packages/steam-info-scraper/) | library | 抓 Steam 與 IsThereAnyDeal 並解析成原始資料（商店頁、評論、SteamDB 區塊、ITAD 價格紀錄），不含 Sheet 格式 |
 | [`sheet-api`](packages/sheet-api/) | library | Sheet Web App 的協定（請求 / 回應型別、錯誤碼、傾印列規則 `toDumpRow`、部署 URL）與 client；`apps-script` 也引用它，兩端共用同一份定義 |
 | [`tampermonkey-requests`](packages/tampermonkey-requests/) | library | 給 userscript 用：`GM_xmlhttpRequest` 的 fetch 函式，以及 token 存在 Tampermonkey 的 `sheet-api` client |
 | [`game-record-writer`](packages/game-record-writer/) | library | 新增 / 更新 Sheet 遊戲列的所有規則與流程；欄位對照表在它的 [`COLUMNS.md`](packages/game-record-writer/COLUMNS.md) |

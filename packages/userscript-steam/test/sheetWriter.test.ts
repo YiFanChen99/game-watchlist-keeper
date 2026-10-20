@@ -1,9 +1,9 @@
-import type { FetchText } from '@watchlist/core';
+import { HttpStatusError, type FetchText } from '@watchlist/core';
 import { Column } from '@watchlist/game-record-writer';
 import { SheetApiError, type SheetApi } from '@watchlist/sheet-api';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { fixtureFetchText, loadStorePage } from '../../steam-info-scraper/test/fixtures';
+import { fixtureFetchText, fixtureItadApiKey, loadStorePage } from '../../steam-info-scraper/test/fixtures';
 import { startSheetWriter } from '../src/sheetWriter';
 
 const api = {
@@ -13,20 +13,28 @@ const api = {
     appendRow: vi.fn<SheetApi['appendRow']>(),
 };
 
-/** Steam requests; serves the saved fixtures unless a test says otherwise. */
+/** Steam and ITAD requests; serves the saved fixtures unless a test says otherwise. */
 const steamFetchText = vi.fn<FetchText>();
+
+/** The ITAD API key in Tampermonkey storage; none unless a test saves one. */
+let savedItadApiKey: string | undefined;
+const forgetItadApiKeyIfRefused = vi.fn((error: Error | null) => error instanceof HttpStatusError && error.status === 403);
 
 // Keep the real `copyText`, so the clipboard goes through `GM_setClipboard`.
 vi.mock('../src/tampermonkey', async importOriginal => ({
     ...await importOriginal<typeof import('../src/tampermonkey')>(),
-    fetchText: (url: string) => steamFetchText(url),
+    fetchText: (url: string, headers?: Record<string, string>) => steamFetchText(url, headers),
     withApi: <T>(run: (sheetApi: SheetApi) => Promise<T>) => run(api as unknown as SheetApi),
+    itadApiKey: {
+        get: () => savedItadApiKey,
+        forgetIfRefused: (error: Error | null) => forgetItadApiKeyIfRefused(error),
+    },
 }));
 
 /** Slay the Spire 2: 繁中 and TWD, so the open page reads the same as a fetched one. */
 const appId = 2868840;
 const storePageFetchUrl = `https://store.steampowered.com/app/${appId}/?l=tchinese&cc=tw`;
-const noSteamDbNote = '沒有 SteamDB 區塊，最低off 沒有更新（原本是數字的話前面加上 !，表示可能過時）。';
+const noSourcesNote = '沒有 ITAD 的 API key，也沒有 SteamDB 區塊，最低off 沒有更新（原本是數字的話前面加上 !，表示可能過時）。';
 const messageLifetimeMs = 60_000;
 
 const setClipboard = vi.fn<(text: string, type: string) => void>();
@@ -117,6 +125,8 @@ beforeEach(() => {
     openStorePage();
     vi.stubGlobal('GM_setClipboard', setClipboard);
     steamFetchText.mockImplementation(fixtureFetchText);
+    savedItadApiKey = undefined;
+    forgetItadApiKeyIfRefused.mockImplementation(error => error instanceof HttpStatusError && error.status === 403);
     api.findRow.mockResolvedValue(null);
     api.updateRow.mockResolvedValue({ row: 7 });
     api.appendRow.mockResolvedValue({ row: 4 });
@@ -212,7 +222,7 @@ describe('update', () => {
         const lines = status()?.split('\n');
         expect(lines?.slice(0, 3)).toEqual(['已更新。', '原價 459 → 499（+40）', '特 英 → 簡']);
         expect(lines?.[3]).toMatch(/^備註 中位1H，3rd\.高2H。 → 中位\d+H，PR\d+ \d+H。$/);
-        expect(lines?.slice(4)).toEqual([noSteamDbNote]);
+        expect(lines?.slice(4)).toEqual([noSourcesNote]);
 
         // settle() moved the fake clock on a little while it polled.
         vi.advanceTimersByTime(messageLifetimeMs / 2);
@@ -221,7 +231,7 @@ describe('update', () => {
         expect(status()).toBeNull();
     });
 
-    it('marks a numeric 最低off as possibly outdated without a SteamDB block', async () => {
+    it('marks a numeric 最低off as possibly outdated without ITAD or a SteamDB block', async () => {
         await start();
 
         sheetButton().click();
@@ -230,7 +240,7 @@ describe('update', () => {
         expect(api.updateRow).toHaveBeenCalledWith(appId, expect.objectContaining({ [Column.lowestOff]: '!20' }));
     });
 
-    it('writes 最低off from the SteamDB block read on click, marked as it is the only source, without the note', async () => {
+    it('writes 最低off from the SteamDB block read on click, marked as it is the only source', async () => {
         await start();
         // The extension adds its block after the page loads.
         addSteamDbBlock();
@@ -240,12 +250,37 @@ describe('update', () => {
 
         expect(api.updateRow).toHaveBeenCalledWith(appId, expect.objectContaining({ [Column.lowestOff]: '!30' }));
         expect(status()).toContain('原價 459 → 499（+40）');
-        expect(status()).not.toContain(noSteamDbNote);
+        expect(status()).toContain('沒有 ITAD 的 API key，最低off 只看 SteamDB 區塊，前面加上 !。');
+    });
+
+    it('takes 最低off from ITAD with the saved key, sending it in a header, without a note', async () => {
+        savedItadApiKey = fixtureItadApiKey;
+        await start();
+
+        sheetButton().click();
+        await settle();
+
+        // Never discounted since release; the old 20 off 459 is dropped, as ITAD has every price since.
+        expect(api.updateRow).toHaveBeenCalledWith(appId, expect.objectContaining({ [Column.lowestOff]: 0 }));
+        expect(steamFetchText).toHaveBeenCalledWith(expect.stringContaining('isthereanydeal'), { 'ITAD-API-Key': fixtureItadApiKey });
+        expect(status()).not.toContain('最低off');
+    });
+
+    it('forgets a key ITAD refuses, and says so', async () => {
+        savedItadApiKey = 'refused';
+        await start();
+
+        sheetButton().click();
+        await settle();
+
+        expect(forgetItadApiKeyIfRefused).toHaveBeenCalledWith(expect.any(HttpStatusError));
+        expect(api.updateRow).toHaveBeenCalledWith(appId, expect.objectContaining({ [Column.lowestOff]: '!20' }));
+        expect(status()).toContain('ITAD 拒絕了 API key（下次會重新詢問），也沒有 SteamDB 區塊');
     });
 
     it('says only 已更新。 when nothing it reports changed', async () => {
+        savedItadApiKey = fixtureItadApiKey;
         await start();
-        addSteamDbBlock();
         sheetButton().click();
         await settle();
         api.readRow.mockResolvedValue({ row: 7, values: api.updateRow.mock.calls[0]![1] });
@@ -301,7 +336,7 @@ describe('update', () => {
 });
 
 describe('add', () => {
-    it('shows 新增中… while it works, then adds the row with 最低off 0 without a SteamDB block', async () => {
+    it('shows 新增中… while it works, then adds the row with 最低off 0 without ITAD or a SteamDB block', async () => {
         vi.useFakeTimers();
         await start();
         const append = deferred<Awaited<ReturnType<SheetApi['appendRow']>>>();
@@ -324,7 +359,7 @@ describe('add', () => {
             [Column.wantLevel]: '?',
         }));
         expect(sheetButton().textContent).toBe('↻ 更新');
-        expect(status()).toBe('已新增。沒有 SteamDB 區塊，最低off 寫 0。');
+        expect(status()).toBe('已新增。\n沒有 ITAD 的 API key，也沒有 SteamDB 區塊，最低off 寫 0。');
         vi.advanceTimersByTime(messageLifetimeMs);
         expect(status()).toBeNull();
     });
@@ -337,6 +372,17 @@ describe('add', () => {
         await settle();
 
         expect(api.appendRow).toHaveBeenCalledWith(appId, expect.objectContaining({ [Column.lowestOff]: '!30' }));
+        expect(status()).toBe('已新增。\n沒有 ITAD 的 API key，最低off 只看 SteamDB 區塊，前面加上 !。');
+    });
+
+    it('takes 最低off from ITAD with the saved key, without a note', async () => {
+        savedItadApiKey = fixtureItadApiKey;
+        await start();
+
+        sheetButton().click();
+        await settle();
+
+        expect(api.appendRow).toHaveBeenCalledWith(appId, expect.objectContaining({ [Column.lowestOff]: 0 }));
         expect(status()).toBe('已新增。');
     });
 

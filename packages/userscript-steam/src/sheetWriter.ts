@@ -3,20 +3,28 @@ import {
     addGame,
     fetchPlaytime,
     formatChange,
+    formatLowestOffNote,
     MissingValueError,
     refreshGame,
     sheetApiRowStore,
+    type ItadOutcome,
 } from '@watchlist/game-record-writer';
 import { SheetApiError } from '@watchlist/sheet-api';
-import { readSteamDbPrices } from '@watchlist/steam-info-scraper';
+import { readSteamDbPrices, type SteamDbPrices } from '@watchlist/steam-info-scraper';
 
-import { copyText, fetchText, withApi } from './tampermonkey';
+import { copyText, fetchText, itadApiKey, withApi } from './tampermonkey';
 import { Panel } from './panel';
 
 type Action = 'check' | 'add' | 'update';
 
 const isSheetError = (error: unknown, code: SheetApiError['code']) =>
     error instanceof SheetApiError && error.code === code;
+
+/** Where 最低off takes its lowest price from. */
+interface LowestOffSources {
+    steamDb: SteamDbPrices | null;
+    itadApiKey: string | undefined;
+}
 
 /**
  * Put the sheet and playtime buttons on the store page of `window.location`; does nothing off an
@@ -58,14 +66,32 @@ export function startSheetWriter(): void {
         panel.setState({ kind: action });
     }
 
-    const noSteamDbNote = '沒有 SteamDB 區塊，最低off 沒有更新（原本是數字的話前面加上 !，表示可能過時）。';
+    /**
+     * 最低off's sources, read on click: the SteamDB extension fills its block in after the page
+     * loads. Asks for the ITAD API key the first time.
+     */
+    function readLowestOffSources(): LowestOffSources {
+        return { steamDb: readSteamDbPrices(document), itadApiKey: itadApiKey.get() };
+    }
+
+    /** The note on what 最低off went by, when ITAD gave nothing; forgets a refused key. */
+    function lowestOffNotes(action: 'add' | 'refresh', sources: LowestOffSources, outcome: ItadOutcome): string[] {
+        const note = formatLowestOffNote(outcome, {
+            action,
+            hasItadApiKey: sources.itadApiKey !== undefined,
+            isItadApiKeyRefused: itadApiKey.forgetIfRefused(outcome.itadError),
+            hasSteamDb: sources.steamDb !== null,
+        });
+        return note === null ? [] : [note];
+    }
 
     async function add(): Promise<void> {
+        const sources = readLowestOffSources();
         panel.setState({ kind: 'busy', label: '新增中…' });
-        // Read on click: the SteamDB extension fills its block in after the page loads.
-        const steamDb = readSteamDbPrices(document);
+        let notes: string[];
         try {
-            await withApi(api => addGame(appId!, { fetchText, store: sheetApiRowStore(api), steamDb, openStorePage: document }));
+            const outcome = await withApi(api => addGame(appId!, { fetchText, store: sheetApiRowStore(api), ...sources, openStorePage: document }));
+            notes = lowestOffNotes('add', sources, outcome);
         } catch (error) {
             if (error instanceof MissingValueError) {
                 // Retrying will not help; the page lacks the value. Keep it shown: nothing was added.
@@ -80,16 +106,16 @@ export function startSheetWriter(): void {
             return;
         }
         action = 'update';
-        panel.setState({ kind: 'update' }, steamDb === null ? '已新增。沒有 SteamDB 區塊，最低off 寫 0。' : '已新增。');
+        panel.setState({ kind: 'update' }, ['已新增。', ...notes].join('\n'));
     }
 
     async function update(): Promise<void> {
+        const sources = readLowestOffSources();
         panel.setState({ kind: 'busy', label: '更新中…' });
-        const steamDb = readSteamDbPrices(document);
         try {
-            const { changes } = await withApi(api =>
-                refreshGame(appId!, { fetchText, store: sheetApiRowStore(api), steamDb, openStorePage: document }));
-            const lines = ['已更新。', ...changes.map(formatChange), ...(steamDb === null ? [noSteamDbNote] : [])];
+            const result = await withApi(api =>
+                refreshGame(appId!, { fetchText, store: sheetApiRowStore(api), ...sources, openStorePage: document }));
+            const lines = ['已更新。', ...result.changes.map(formatChange), ...lowestOffNotes('refresh', sources, result)];
             panel.setState({ kind: 'update' }, lines.join('\n'));
         } catch (error) {
             if (!isSheetError(error, 'not-found')) {
