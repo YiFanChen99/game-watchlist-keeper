@@ -1,3 +1,4 @@
+import type { PostText } from '@watchlist/core';
 import { describe, expect, it, vi } from 'vitest';
 
 import { createSheetApi, SheetApiError, SheetApiUnauthorizedError } from '../src';
@@ -5,10 +6,10 @@ import { createSheetApi, SheetApiError, SheetApiUnauthorizedError } from '../src
 const webAppUrl = 'https://script.google.com/macros/s/xxx/exec';
 const token = 'a b&c';
 
-const respond = (body: string) => () => Promise.resolve(body);
+const respond = (body: string): PostText => () => Promise.resolve(body);
 
 /** The JSON body of each POST, parsed. */
-const sentBodies = (postText: ReturnType<typeof vi.fn<(url: string, body: string) => Promise<string>>>) =>
+const sentBodies = (postText: ReturnType<typeof vi.fn<PostText>>) =>
     postText.mock.calls.map(([, body]) => JSON.parse(body) as unknown);
 
 describe('createSheetApi().fetchDump', () => {
