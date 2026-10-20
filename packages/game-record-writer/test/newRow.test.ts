@@ -2,34 +2,8 @@ import { describe, expect, it } from 'vitest';
 
 import type { SteamSnapshot } from '@watchlist/steam-info-scraper';
 
-import { buildNameFormula, Column, MissingValueError, planLowestOff, planNewRow } from '../src';
+import { buildNameFormula, Column, MissingValueError, planNewRow } from '../src';
 import { percentRank, playtimeSample } from './playtimeSample';
-
-describe('planLowestOff (COLUMNS.md 最低off)', () => {
-    it('turns the lowest price into a discount off the original price', () => {
-        expect(planLowestOff({ lowestPrice: 149 }, 499)).toBe(70);
-        expect(planLowestOff({ lowestPrice: 1190 }, 1490)).toBe(20);
-        expect(planLowestOff({ lowestPrice: 888.3 }, 888.3)).toBe(0);
-    });
-
-    it('never goes below 0 when the price has gone up since', () => {
-        expect(planLowestOff({ lowestPrice: 590 }, 499)).toBe(0);
-    });
-
-    it('writes 100 for a free game', () => {
-        expect(planLowestOff(null, 0)).toBe(100);
-        expect(planLowestOff({ lowestPrice: null }, 0)).toBe(100);
-    });
-
-    it('leaves the cell blank without an original price, or when the block shows no price', () => {
-        expect(planLowestOff({ lowestPrice: 149 }, null)).toBeNull();
-        expect(planLowestOff({ lowestPrice: null }, 499)).toBeNull();
-    });
-
-    it('defaults to 0 without a SteamDB block', () => {
-        expect(planLowestOff(null, 499)).toBe(0);
-    });
-});
 
 describe('buildNameFormula', () => {
     it('links the canonical store URL and escapes quotes', () => {
@@ -71,7 +45,7 @@ describe('planNewRow', () => {
 
     it('writes the price placeholder and no lowest discount without a price', () => {
         const unpriced: SteamSnapshot = { ...snapshot, page: { ...snapshot.page, originalPrice: null } };
-        const row = planNewRow({ appId: 42, snapshot: unpriced, lowestOff: planLowestOff({ lowestPrice: 1 }, null), today });
+        const row = planNewRow({ appId: 42, snapshot: unpriced, lowestOff: null, today });
 
         expect(row[Column.originalPrice]).toBe(10000);
         expect(row).not.toHaveProperty(Column.lowestOff);

@@ -1,7 +1,7 @@
 import type { SheetApi } from '@watchlist/sheet-api';
 import { describe, expect, it, vi } from 'vitest';
 
-import { fixtureFetchText, loadStorePage } from '../../steam-info-scraper/test/fixtures';
+import { fixtureFetchText, fixtureItadApiKey, loadStorePage } from '../../steam-info-scraper/test/fixtures';
 import {
     addGame,
     Column,
@@ -75,6 +75,30 @@ describe('refreshGame', () => {
         expect(changes).toContainEqual({ column: Column.originalPrice, oldValue: 459, newValue: '-', delta: null });
     });
 
+    it('takes 最低off from ITAD, and still refreshes when ITAD fails', async () => {
+        const row = { [Column.originalPrice]: 261, [Column.lowestOff]: 90 };
+        const refresh = (itadApiKey: string) =>
+            refreshGame(900270, { fetchText: fixtureFetchText, store: fakeStore(row).store, itadApiKey, now: () => new Date(2026, 9, 20) });
+
+        const answered = await refresh(fixtureItadApiKey);
+        expect(answered.updates[Column.lowestOff]).toBe('!96');
+        expect(answered.itadHistory).not.toBeNull();
+        expect(answered.itadError).toBeNull();
+
+        const refused = await refresh('wrong');
+        expect(refused.updates[Column.lowestOff]).toBe('!90');
+        expect(refused.itadHistory).toBeNull();
+        expect(refused.itadError?.message).toContain('403');
+    });
+
+    it('asks ITAD nothing without an API key', async () => {
+        const fetchText = vi.fn(fixtureFetchText);
+        const { itadHistory, itadError } = await refreshGame(2868840, { fetchText, store: fakeStore({}).store });
+
+        expect(fetchText.mock.calls.map(([url]) => url)).not.toContainEqual(expect.stringContaining('isthereanydeal'));
+        expect({ itadHistory, itadError }).toEqual({ itadHistory: null, itadError: null });
+    });
+
     it('writes nothing when a fetch fails', async () => {
         const { store, write } = fakeStore({});
         const failing = () => Promise.reject(new Error('offline'));
@@ -85,10 +109,10 @@ describe('refreshGame', () => {
 });
 
 describe('addGame', () => {
-    it('appends a full row with the lowest discount from the SteamDB block', async () => {
+    it('appends a full row, with the lowest discount from the SteamDB block marked when ITAD is not asked', async () => {
         const { store, append } = fakeStore({});
 
-        const row = await addGame(2868840, {
+        const { row } = await addGame(2868840, {
             fetchText: fixtureFetchText,
             store,
             steamDb: { lowestPrice: 349 },
@@ -99,7 +123,8 @@ describe('addGame', () => {
         expect(row).toMatchObject({
             [Column.name]: '=HYPERLINK("https://store.steampowered.com/app/2868840/","Slay the Spire 2")',
             [Column.originalPrice]: 499,
-            [Column.lowestOff]: 30,
+            // SteamDB alone: no original price of its time to check it against.
+            [Column.lowestOff]: '!30',
             [Column.wantLevel]: '?',
             [Column.updatedOn]: '2026/10/17',
         });

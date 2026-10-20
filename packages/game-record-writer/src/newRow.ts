@@ -1,7 +1,7 @@
 import { storePageUrl } from '@watchlist/core';
 import type { SteamSnapshot } from '@watchlist/steam-info-scraper';
 
-import { Column, todoPlaceholder, type SheetRowValues } from './columns';
+import { Column, todoPlaceholder, type CellValue, type SheetRowValues } from './columns';
 import { planRefresh, unknownPricePlaceholder } from './refresh';
 
 /** Written to the want level column of a new row: not rated yet. */
@@ -18,8 +18,8 @@ export function buildNameFormula(appId: number, name: string): string {
 export interface NewRowInput {
     appId: number;
     snapshot: SteamSnapshot;
-    /** From `planLowestOff`; `null` leaves the cell blank. */
-    lowestOff: number | null;
+    /** From `planLowestOff` without an old row; `null` leaves the cell blank. */
+    lowestOff: CellValue | null;
     today: Date;
 }
 

@@ -230,7 +230,7 @@ describe('update', () => {
         expect(api.updateRow).toHaveBeenCalledWith(appId, expect.objectContaining({ [Column.lowestOff]: '!20' }));
     });
 
-    it('writes 最低off from the SteamDB block read on click, without the note', async () => {
+    it('writes 最低off from the SteamDB block read on click, marked as it is the only source, without the note', async () => {
         await start();
         // The extension adds its block after the page loads.
         addSteamDbBlock();
@@ -238,7 +238,7 @@ describe('update', () => {
         sheetButton().click();
         await settle();
 
-        expect(api.updateRow).toHaveBeenCalledWith(appId, expect.objectContaining({ [Column.lowestOff]: 30 }));
+        expect(api.updateRow).toHaveBeenCalledWith(appId, expect.objectContaining({ [Column.lowestOff]: '!30' }));
         expect(status()).toContain('原價 459 → 499（+40）');
         expect(status()).not.toContain(noSteamDbNote);
     });
@@ -329,14 +329,14 @@ describe('add', () => {
         expect(status()).toBeNull();
     });
 
-    it('writes 最低off from the SteamDB block read on click', async () => {
+    it('writes 最低off from the SteamDB block read on click, marked as it is the only source', async () => {
         await start();
         addSteamDbBlock();
 
         sheetButton().click();
         await settle();
 
-        expect(api.appendRow).toHaveBeenCalledWith(appId, expect.objectContaining({ [Column.lowestOff]: 30 }));
+        expect(api.appendRow).toHaveBeenCalledWith(appId, expect.objectContaining({ [Column.lowestOff]: '!30' }));
         expect(status()).toBe('已新增。');
     });
 

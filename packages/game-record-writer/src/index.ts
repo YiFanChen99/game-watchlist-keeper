@@ -8,7 +8,14 @@ export {
 } from './columns';
 export { formatReleaseDate, formatSheetDate, parseSheetDate } from './date';
 export { computePlaytimeStats, playtimePercentRank, type PlaytimeStats } from './playtime';
-export { defaultLowestOff, planLowestOff } from './lowestOff';
+export {
+    defaultLowestOff,
+    keptLowestPriceMonths,
+    noLowestOffSources,
+    planLowestOff,
+    recentLowestPriceMonths,
+    type LowestOffSources,
+} from './lowestOff';
 export { buildDetail, extractPlaytime, formatPlaytime, mergeDetail } from './detail';
 export { mergeSpecial } from './special';
 export {
@@ -30,6 +37,9 @@ export {
     fetchPlaytime,
     refreshGame,
     sheetApiRowStore,
+    type AddResult,
+    type ItadOutcome,
     type RefreshDeps,
+    type RefreshResult,
     type SheetRowStore,
 } from './flows';

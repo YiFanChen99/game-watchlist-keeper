@@ -1,7 +1,6 @@
-import { parseSteamDbPrices } from '@watchlist/steam-info-scraper';
 import { expect, it } from 'vitest';
 
-import { fixtureFetchText } from '../../steam-info-scraper/test/fixtures';
+import { fixtureFetchText, fixtureItadApiKey } from '../../steam-info-scraper/test/fixtures';
 import {
     addGame,
     Column,
@@ -24,10 +23,9 @@ const games: readonly (readonly [appId: number, label: string])[] = [
     [1966720, 'Lethal Company：搶先體驗、只支援英文'],
     [3669620, 'Warhammer Survivors：尚未發售、沒有價格、有 Demo、沒有評論'],
     [570, 'Dota 2：免費遊玩'],
+    [900270, 'Reventure：史低之後漲價'],
 ];
 const today = new Date(2026, 9, 17);
-const steamDbText = 'Lowest recorded price: NT$ 99';
-const steamDb = parseSteamDbPrices(steamDbText);
 
 /**
  * Old row for the update case: placeholder price, a review score to mark when Steam has no reviews,
@@ -63,7 +61,7 @@ function formatChange({ column, oldValue, newValue, delta }: ValueChange): strin
 }
 
 async function describeGame(appId: number, label: string): Promise<string> {
-    const deps = { fetchText: fixtureFetchText, steamDb, now: () => today };
+    const deps = { fetchText: fixtureFetchText, itadApiKey: fixtureItadApiKey, now: () => today };
     const added = recordingStore();
     await addGame(appId, { ...deps, store: added.store });
     const updated = recordingStore();
@@ -91,9 +89,9 @@ it('documents what each button sends for every fixture game', async () => {
         '',
         '> 由 `test/payloads.test.ts` 產生，不要手動編輯。規則見 [COLUMNS.md](../../COLUMNS.md)。',
         '',
-        `- 今天：${today.getFullYear()}/${today.getMonth() + 1}/${today.getDate()}；SteamDB 區塊：\`${steamDbText}\``,
+        `- 今天：${today.getFullYear()}/${today.getMonth() + 1}/${today.getDate()}；沒有 SteamDB 區塊（跟 SteamGifts、Sheet 上的 ↻ 一樣），最低off 只看 ITAD。`,
         '- `—`：送出欄裡表示不送、Sheet 上保持原樣（新增時就是空白）；「更新前」欄裡表示這個例子沒有設定舊值。公式欄由 server 從上一列複製，不在表內。',
-        '- 遊戲資料來自 `packages/steam-info-scraper/test/fixtures`（2026-10-17 抓取）。',
+        '- 遊戲資料來自 `packages/steam-info-scraper/test/fixtures`（Steam 2026-10-17 抓取，Reventure 與 ITAD 2026-10-20）。',
         '',
         ...sections.flatMap(section => [section, '']),
     ].join('\n');

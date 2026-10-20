@@ -1,6 +1,13 @@
 import type { FetchText } from '@watchlist/core';
 import type { SheetApi } from '@watchlist/sheet-api';
-import { fetchPlaytimeSample, fetchSteamSnapshot, type ParseHtml, type SteamDbPrices } from '@watchlist/steam-info-scraper';
+import {
+    fetchItadPriceHistory,
+    fetchPlaytimeSample,
+    fetchSteamSnapshot,
+    type ItadPriceRecord,
+    type ParseHtml,
+    type SteamDbPrices,
+} from '@watchlist/steam-info-scraper';
 
 import type { ColumnName, SheetRowValues } from './columns';
 import { formatPlaytime } from './detail';
@@ -43,11 +50,10 @@ export interface RefreshDeps {
     parseHtml?: ParseHtml;
     /** Defaults to the current time; decides the update date. */
     now?: () => Date;
-    /**
-     * The SteamDB block (`readSteamDbPrices`), where the page has one.
-     * Refresh: null or absent leaves 最低off alone. Add: null writes `defaultLowestOff` (0).
-     */
+    /** The SteamDB block (`readSteamDbPrices`), where the page has one; see `planLowestOff`. */
     steamDb?: SteamDbPrices | null;
+    /** IsThereAnyDeal's API key; without it, 最低off goes by the SteamDB block alone. */
+    itadApiKey?: string;
     /**
      * The app's store page, when the caller is on it (userscript-steam): parsed instead of
      * fetched when it reads the same as a fetched one (`matchesFetchedStorePage`: 繁中, TWD).
@@ -55,37 +61,70 @@ export interface RefreshDeps {
     openStorePage?: Document;
 }
 
+/** What IsThereAnyDeal answered, for the user to know where 最低off came from. */
+export interface ItadOutcome {
+    /** Its price records of the game; `null` without them. */
+    itadHistory: readonly ItadPriceRecord[] | null;
+    /** The failed request, which leaves 最低off to the SteamDB block; `null` when ITAD answered or was not asked. */
+    itadError: Error | null;
+}
+
+/** ITAD's records, or why there are none. A failure does not fail the refresh: 最低off has other ways. */
+async function fetchItad(appId: number, deps: RefreshDeps): Promise<ItadOutcome> {
+    if (deps.itadApiKey === undefined) {
+        return { itadHistory: null, itadError: null };
+    }
+    try {
+        return { itadHistory: await fetchItadPriceHistory(appId, deps.fetchText, deps.itadApiKey), itadError: null };
+    } catch (error) {
+        return { itadHistory: null, itadError: error instanceof Error ? error : new Error(String(error)) };
+    }
+}
+
+export interface RefreshResult extends RefreshPlan, ItadOutcome {}
+
 /**
- * Refresh one game's sheet row from Steam.
+ * Refresh one game's sheet row from Steam and ITAD.
  *
- * @returns The written cells, and the price / release date changes to show the user.
+ * @returns The written cells, the price / release date changes to show the user, and ITAD's answer.
  */
-export async function refreshGame(appId: number, deps: RefreshDeps): Promise<RefreshPlan> {
-    const [snapshot, oldRow] = await Promise.all([
+export async function refreshGame(appId: number, deps: RefreshDeps): Promise<RefreshResult> {
+    const [snapshot, oldRow, itad] = await Promise.all([
         fetchSteamSnapshot(appId, deps.fetchText, deps.parseHtml, deps.openStorePage),
         deps.store.read(appId, refreshReadColumns),
+        fetchItad(appId, deps),
     ]);
-    const lowestOff = deps.steamDb == null ? null : planLowestOff(deps.steamDb, snapshot.page.originalPrice);
-    const plan = planRefresh(snapshot, oldRow, deps.now?.() ?? new Date(), { lowestOff });
+    const today = deps.now?.() ?? new Date();
+    const lowestOff = planLowestOff(snapshot.page, { itadHistory: itad.itadHistory, steamDb: deps.steamDb ?? null }, oldRow, today);
+    const plan = planRefresh(snapshot, oldRow, today, { lowestOff });
     await deps.store.write(appId, plan.updates);
-    return plan;
+    return { ...plan, ...itad };
+}
+
+export interface AddResult extends ItadOutcome {
+    /** The written cells. */
+    row: SheetRowValues;
 }
 
 /**
  * Add a row for a game the sheet does not have yet; see `planNewRow`.
  *
- * @returns The written cells.
+ * @returns The written cells, and ITAD's answer.
  */
-export async function addGame(appId: number, deps: RefreshDeps): Promise<SheetRowValues> {
-    const snapshot = await fetchSteamSnapshot(appId, deps.fetchText, deps.parseHtml, deps.openStorePage);
+export async function addGame(appId: number, deps: RefreshDeps): Promise<AddResult> {
+    const [snapshot, itad] = await Promise.all([
+        fetchSteamSnapshot(appId, deps.fetchText, deps.parseHtml, deps.openStorePage),
+        fetchItad(appId, deps),
+    ]);
+    const today = deps.now?.() ?? new Date();
     const row = planNewRow({
         appId,
         snapshot,
-        lowestOff: planLowestOff(deps.steamDb ?? null, snapshot.page.originalPrice),
-        today: deps.now?.() ?? new Date(),
+        lowestOff: planLowestOff(snapshot.page, { itadHistory: itad.itadHistory, steamDb: deps.steamDb ?? null }, null, today),
+        today,
     });
     await deps.store.append(appId, row);
-    return row;
+    return { row, ...itad };
 }
 
 /**

@@ -59,11 +59,8 @@ export const unknownPricePlaceholder = 10000;
 export const delistedMark = '-';
 
 export interface RefreshOptions {
-    /**
-     * From `planLowestOff`, where the SteamDB block can be read (the Steam store page).
-     * `null` or absent keeps the old 最低off, marked outdated (`markOutdated`).
-     */
-    lowestOff?: number | null;
+    /** The 最低off cell from `planLowestOff`; `null` or absent leaves it alone. */
+    lowestOff?: CellValue | null;
 }
 
 const msPerDay = 24 * 60 * 60 * 1000;
@@ -85,7 +82,7 @@ export const unreliableScorePrefix = '!';
  *
  * @returns `null` to leave the cell alone: it is blank, already marked, or other text.
  */
-function markOutdated(oldValue: CellValue | undefined): string | null {
+export function markOutdated(oldValue: CellValue | undefined): string | null {
     const old = String(oldValue ?? '').trim();
     return /^\d+$/.test(old) ? `${unreliableScorePrefix}${old}` : null;
 }
@@ -188,15 +185,13 @@ export function formatPrice(price: number): number {
  * Decide which cells of an existing row to write after fetching fresh Steam data.
  * The rules are listed in COLUMNS.md.
  *
- * - A game no longer sold on Steam gets `delistedMark` as its price and lowest discount, and
- *   the price change is reported.
+ * - A game no longer sold on Steam gets `delistedMark` as its price, and the price change is reported.
  * - Price (rounded), release date and review score are replaced when Steam has them, and
  *   left alone when it does not (e.g. no price before release). Price and date changes are
  *   reported, except replacing `unknownPricePlaceholder`.
  * - The review score gets `unreliableScorePrefix` when too few reviews back it, and an old
  *   number gets it when Steam has no reviews; see `planReviewScore`.
- * - The lowest discount is written when `options.lowestOff` has one; otherwise an old number
- *   gets `unreliableScorePrefix`, as it may be outdated; see `markOutdated`.
+ * - The lowest discount is `options.lowestOff`, planned by `planLowestOff`.
  * - The update date becomes `today`.
  * - The special cell gets its language mark and `Demo` tag refreshed; see `mergeSpecial`.
  * - The detail cell only gets its playtime part replaced; see `mergeDetail`.
@@ -226,9 +221,8 @@ export function planRefresh(
         const change = priceChange(oldRow[Column.originalPrice], price);
         if (change) changes.push(change);
     }
-    const lowestOff = page.isDelisted ? delistedMark : options.lowestOff ?? markOutdated(oldRow[Column.lowestOff]);
-    if (lowestOff !== null) {
-        updates[Column.lowestOff] = lowestOff;
+    if (options.lowestOff != null) {
+        updates[Column.lowestOff] = options.lowestOff;
     }
     if (page.releaseDate !== null) {
         const releaseDate = formatReleaseDate(page.releaseDate);

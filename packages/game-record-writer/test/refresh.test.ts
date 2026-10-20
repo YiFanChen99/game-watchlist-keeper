@@ -9,7 +9,6 @@ import {
     mergeDetail,
     mergeSpecial,
     planRefresh,
-    type CellValue,
     type PlaytimeStats,
     type SheetRowValues,
     unknownPricePlaceholder,
@@ -249,10 +248,10 @@ describe('planRefresh', () => {
         ]);
     });
 
-    it('writes - as the price and lowest discount of a game no longer sold, reporting the price', () => {
+    it('writes - as the price of a game no longer sold, reporting the change', () => {
         const delisted: SteamSnapshot = { ...snapshot, page: { ...page, originalPrice: null, isDelisted: true } };
 
-        const { updates, changes } = planRefresh(delisted, { [Column.originalPrice]: 459, [Column.lowestOff]: 30 }, today, { lowestOff: 50 });
+        const { updates, changes } = planRefresh(delisted, { [Column.originalPrice]: 459, [Column.lowestOff]: 30 }, today, { lowestOff: '-' });
 
         expect(updates).toMatchObject({ [Column.originalPrice]: '-', [Column.lowestOff]: '-' });
         expect(changes).toContainEqual({ column: Column.originalPrice, oldValue: 459, newValue: '-', delta: null });
@@ -262,20 +261,11 @@ describe('planRefresh', () => {
         }
     });
 
-    it('writes the lowest discount when one is given, replacing an outdated one', () => {
-        expect(planRefresh(snapshot, {}, today, { lowestOff: 30 }).updates[Column.lowestOff]).toBe(30);
-        expect(planRefresh(snapshot, { [Column.lowestOff]: '!25' }, today, { lowestOff: 30 }).updates[Column.lowestOff]).toBe(30);
-    });
-
-    it('prefixes ! to an old lowest discount it has no new one for, and leaves anything else alone', () => {
-        const lowestOff = (old: CellValue | undefined, options?: { lowestOff: null }) =>
-            planRefresh(snapshot, old === undefined ? {} : { [Column.lowestOff]: old }, today, options).updates[Column.lowestOff];
-
-        expect(lowestOff(30)).toBe('!30');
-        expect(lowestOff('0', { lowestOff: null })).toBe('!0');
-        expect(lowestOff('!30')).toBeUndefined();
-        expect(lowestOff('')).toBeUndefined();
-        expect(lowestOff(undefined)).toBeUndefined();
+    it('writes the lowest discount planned by planLowestOff, and leaves the cell alone without one', () => {
+        const oldRow = { [Column.lowestOff]: 25 };
+        expect(planRefresh(snapshot, oldRow, today, { lowestOff: '!30' }).updates[Column.lowestOff]).toBe('!30');
+        expect(planRefresh(snapshot, oldRow, today, { lowestOff: null }).updates).not.toHaveProperty(Column.lowestOff);
+        expect(planRefresh(snapshot, oldRow, today).updates).not.toHaveProperty(Column.lowestOff);
     });
 
     it('replaces the unknown price placeholder without reporting a change', () => {
