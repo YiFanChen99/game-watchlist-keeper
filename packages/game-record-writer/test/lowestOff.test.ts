@@ -126,6 +126,15 @@ describe('planLowestOff (COLUMNS.md 最低off)', () => {
             expect(plan(itad(sinceRelease), old(408, 80))).toBe('!80');
         });
 
+        it('takes an old one as lower only beyond rounding, as a whole percent of the old 原價 stands for a range', () => {
+            // DREDGE: 63 was 299 off the 799 of the Deluxe Edition, which rounds back to 295.6.
+            const dredge = [record('2026-10-08', 749, 749), record('2026-10-01', 299, 749), record('2024-12-11', 749, 749)];
+            expect(plan(itad(dredge), old(799, 63), 749)).toBe(60);
+            expect(plan(itad(dredge), old(799, '!63'), 749)).toBe(60);
+            // 64 off 799 stands for 283.6–291.6: lower than 299 whichever it was.
+            expect(plan(itad(dredge), old(799, 64), 749)).toBe('!62');
+        });
+
         it('compares prices, taking the old one against the old 原價 (#15)', () => {
             const history = [record('2026-01-01', 300, 300), record('2025-05-01', 100, 400), record('2024-12-11', 400, 400)];
             expect(plan(itad(history), old(400, 75), 300)).toBe(67);

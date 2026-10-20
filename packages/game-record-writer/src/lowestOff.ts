@@ -37,6 +37,8 @@ export const noLowestOffSources: LowestOffSources = { itadHistory: null, steamDb
 /** A 最低off from the sources, before comparing with the old cell. */
 interface FreshLowestOff {
     off: number;
+    /** The lowest price `off` comes from. */
+    lowestPrice: number;
     /** Some reason to doubt it; see COLUMNS.md 最低off. */
     isDoubtful: boolean;
 }
@@ -82,6 +84,7 @@ function planFreshLowestOff(originalPrice: number, { itadHistory, steamDb }: Low
         const price = Math.round(originalPrice);
         return {
             off: offOf(itadLowest.price, originalPrice),
+            lowestPrice: itadLowest.price,
             isDoubtful: (steamDbPrice !== null && steamDbPrice < itadLowest.price)
                 // The price rose since the lowest one.
                 || price > Math.round(itadLowest.regular)
@@ -90,17 +93,27 @@ function planFreshLowestOff(originalPrice: number, { itadHistory, steamDb }: Low
         };
     }
     // SteamDB alone: no original price of its time to check it against.
-    return steamDbPrice === null ? null : { off: offOf(steamDbPrice, originalPrice), isDoubtful: true };
+    return steamDbPrice === null ? null : { off: offOf(steamDbPrice, originalPrice), lowestPrice: steamDbPrice, isDoubtful: true };
 }
 
-/** The old 最低off as a price: the old 原價 it was taken against, off by its number. */
-function oldLowestPrice(oldRow: SheetRowValues): number | null {
+/** The lowest price an old 最低off stands for. */
+interface OldLowestPrice {
+    /** The old 原價 it was taken against, off by its number. */
+    price: number;
+    /**
+     * The highest price that rounds to its number: the number is a whole percent, so the price
+     * it was taken from may be up to half a percent of the old 原價 higher than `price`.
+     */
+    highest: number;
+}
+
+function oldLowestPrice(oldRow: SheetRowValues): OldLowestPrice | null {
     const oldPrice = Number(String(oldRow[Column.originalPrice] ?? '').trim() || NaN);
     const oldOff = /^!?(\d+)$/.exec(String(oldRow[Column.lowestOff] ?? '').trim())?.[1];
     if (!Number.isFinite(oldPrice) || oldPrice <= 0 || oldPrice === unknownPricePlaceholder || oldOff === undefined) {
         return null;
     }
-    return oldPrice * (1 - Number(oldOff) / 100);
+    return { price: oldPrice * (1 - Number(oldOff) / 100), highest: oldPrice * (1 - (Number(oldOff) - 0.5) / 100) };
 }
 
 const formatFresh = ({ off, isDoubtful }: FreshLowestOff): CellValue => (isDoubtful ? `${unreliableScorePrefix}${off}` : off);
@@ -132,9 +145,9 @@ export function planLowestOff(
         return markOutdated(oldRow[Column.lowestOff]);
     }
 
-    const oldPrice = oldLowestPrice(oldRow);
-    const oldOff = oldPrice === null ? null : offOf(oldPrice, originalPrice);
-    if (oldOff === null || oldOff <= fresh.off) {
+    // Lower only beyond rounding: 63% off 799 stands for 291.6–299.6, the same lowest price as 299.
+    const old = oldLowestPrice(oldRow);
+    if (old === null || old.highest >= fresh.lowestPrice) {
         return formatFresh(fresh);
     }
     // The old one is lower: keep it unless ITAD shows it is older than `keptLowestPriceMonths`.
@@ -142,6 +155,6 @@ export function planLowestOff(
     const keptLowest = itadHistory && lowestRecordSince(itadHistory, monthsBefore(today, keptLowestPriceMonths));
     const isDropped = !!itadHistory && !!keptLowest
         && coversMonths(itadHistory, keptLowestPriceMonths, page, today)
-        && offOf(keptLowest.price, originalPrice) < oldOff;
-    return isDropped ? formatFresh(fresh) : `${unreliableScorePrefix}${oldOff}`;
+        && keptLowest.price > old.highest;
+    return isDropped ? formatFresh(fresh) : `${unreliableScorePrefix}${offOf(old.price, originalPrice)}`;
 }
