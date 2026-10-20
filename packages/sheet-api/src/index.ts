@@ -1,4 +1,4 @@
-import type { FetchText, PostText } from '@watchlist/core';
+import type { PostText } from '@watchlist/core';
 
 /** Cells of one row, keyed by header name. The rules for which cells to send live in game-record-writer. */
 export type RowValues = Record<string, string | number>;
@@ -61,15 +61,23 @@ export interface SheetDump {
 /** `/exec` URL of the token-guarded deployment (「token API」) the userscripts call. */
 export const deployedWebAppUrl = 'https://script.google.com/macros/s/AKfycbyLkj1F4DL_h8QTn1-jXGPJpVBoo0w5M5nwhuzzlmquqRFvkr6w69nD63Otl6pmOIZS/exec';
 
-/** Query parameter that carries the shared token, on GET and POST alike. */
-export const tokenParam = 'token';
-
 /**
- * GET `?action=row&appId=<id>&columns=<name>,<name>`: the row whose name HYPERLINK links `appId`.
- * `?action=row&row=<n>&columns=…` instead: sheet row `n`, with the app id its name links.
- * Without `action`, GET returns the whole-sheet dump.
+ * POST body `{ action: 'row', appId, columns }`: the row whose name HYPERLINK links `appId`.
+ * `{ action: 'row', row, columns }` instead: sheet row `row`, with the app id its name links.
  */
-export const rowAction = 'row';
+export interface RowRequest {
+    action: 'row';
+    appId?: number;
+    /** 1-based sheet row; read by number instead of looking `appId` up. */
+    row?: number;
+    /** Header names of the columns to read; empty only finds the row. */
+    columns: readonly string[];
+}
+
+/** POST body `{ action: 'dump' }`: the whole-sheet dump (`SheetDump`). */
+export interface DumpRequest {
+    action: 'dump';
+}
 
 /** Response of the `row` action. */
 export interface RowResponse {
@@ -101,11 +109,23 @@ export interface WriteRequest {
     values: RowValues;
 }
 
-/** Response of a POST. */
+/** Response of a write. */
 export interface WriteResponse {
     /** 1-based sheet row that was written. */
     row: number;
 }
+
+/** Every request is a POST of one of these, with the token added (`SheetApiRequestBody`). */
+export type SheetApiRequest = DumpRequest | RowRequest | WriteRequest;
+
+/**
+ * The JSON body of every request. The token rides in the body, never in the URL, so it stays
+ * out of server logs and browser history.
+ */
+export type SheetApiRequestBody = SheetApiRequest & {
+    /** Shared secret stored in the web app's script properties. */
+    token: string;
+};
 
 /**
  * - `unauthorized`: the token is missing or wrong.
@@ -144,9 +164,7 @@ export interface SheetApiOptions {
     /** Shared secret stored in the web app's script properties. */
     token: string;
     /** Must follow redirects: Apps Script redirects `/exec` to `script.googleusercontent.com`. */
-    fetchText: FetchText;
-    /** Needed only by the write methods. Must follow redirects, as `fetchText`. */
-    postText?: PostText;
+    postText: PostText;
 }
 
 export interface SheetApi {
@@ -183,34 +201,23 @@ function parseResponse<T>(body: string): T {
     return data as T;
 }
 
-export function createSheetApi({ webAppUrl, token, fetchText, postText }: SheetApiOptions): SheetApi {
-    const baseUrl = `${webAppUrl}?${tokenParam}=${encodeURIComponent(token)}`;
-
-    async function write(request: WriteRequest): Promise<WriteResponse> {
-        if (!postText) {
-            throw new Error('Sheet API: writing needs postText');
-        }
-        return parseResponse<WriteResponse>(await postText(baseUrl, JSON.stringify(request)));
+export function createSheetApi({ webAppUrl, token, postText }: SheetApiOptions): SheetApi {
+    async function send<T>(request: SheetApiRequest): Promise<T> {
+        const body: SheetApiRequestBody = { token, ...request };
+        return parseResponse<T>(await postText(webAppUrl, JSON.stringify(body)));
     }
 
     const api: SheetApi = {
         async fetchDump() {
-            const data = parseResponse<Partial<SheetDump>>(await fetchText(baseUrl));
+            const data = await send<Partial<SheetDump>>({ action: 'dump' });
             if (!Array.isArray(data.games)) {
                 throw new Error('Sheet dump has no games array');
             }
             return { games: data.games, labelMap: data.labelMap ?? {} };
         },
 
-        async readRow(appId, columns) {
-            const query = `&action=${rowAction}&appId=${appId}&columns=${encodeURIComponent(columns.join(','))}`;
-            return parseResponse<RowResponse>(await fetchText(`${baseUrl}${query}`));
-        },
-
-        async readRowByNumber(row, columns) {
-            const query = `&action=${rowAction}&row=${row}&columns=${encodeURIComponent(columns.join(','))}`;
-            return parseResponse<NumberedRowResponse>(await fetchText(`${baseUrl}${query}`));
-        },
+        readRow: (appId, columns) => send<RowResponse>({ action: 'row', appId, columns }),
+        readRowByNumber: (row, columns) => send<NumberedRowResponse>({ action: 'row', row, columns }),
 
         async findRow(appId) {
             try {
@@ -223,9 +230,9 @@ export function createSheetApi({ webAppUrl, token, fetchText, postText }: SheetA
             }
         },
 
-        updateRow: (appId, values) => write({ action: 'update', appId, values }),
-        updateRowByNumber: (row, appId, values) => write({ action: 'update', appId, values, row }),
-        appendRow: (appId, values) => write({ action: 'append', appId, values }),
+        updateRow: (appId, values) => send<WriteResponse>({ action: 'update', appId, values }),
+        updateRowByNumber: (row, appId, values) => send<WriteResponse>({ action: 'update', appId, values, row }),
+        appendRow: (appId, values) => send<WriteResponse>({ action: 'append', appId, values }),
     };
     return api;
 }

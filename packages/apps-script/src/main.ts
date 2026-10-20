@@ -5,8 +5,6 @@
 import { extractAppId } from '@watchlist/core';
 import { Column } from '@watchlist/game-record-writer';
 import {
-    rowAction,
-    tokenParam,
     type NumberedRowResponse,
     type RowResponse,
     type SheetApiErrorBody,
@@ -58,7 +56,7 @@ const dumpCache = () => gzipCache('dump:v2');
 const appIdIndexCache = () => gzipCache('appIds:v1');
 
 /** Fails closed: an unset token property rejects every request. */
-export function isAuthorized(provided: string | undefined, expected: string | null): boolean {
+export function isAuthorized(provided: unknown, expected: string | null): boolean {
     return Boolean(expected) && provided === expected;
 }
 
@@ -195,19 +193,32 @@ function readCells(context: SheetContext, row: number, names: readonly string[])
     return { row, values: pickValues(context.columns, names, cells, formatDate), url };
 }
 
-/** By `row` when given (`NumberedRowResponse`), else by `appId`. */
-function readRow(parameter: Record<string, string | undefined>): RowResponse | NumberedRowResponse {
-    const names = (parameter.columns ?? '').split(',').map(name => name.trim()).filter(Boolean);
+/** A POST body as parsed, before any field is checked; see `SheetApiRequestBody`. */
+type RequestBody = Record<string, unknown>;
+
+function parseColumns(value: unknown): string[] {
+    if (value === undefined) {
+        return [];
+    }
+    if (!Array.isArray(value) || !value.every(name => typeof name === 'string')) {
+        throw new RequestError('invalid', 'columns must be an array of header names');
+    }
+    return value.map(name => name.trim()).filter(Boolean);
+}
+
+/** A `RowRequest`: by `row` when given (`NumberedRowResponse`), else by `appId`. */
+function readRow(request: RequestBody): RowResponse | NumberedRowResponse {
+    const names = parseColumns(request.columns);
     const context = openSheet();
-    if (parameter.row !== undefined) {
-        const row = parseRow(context, parameter.row);
+    if (request.row !== undefined) {
+        const row = parseRow(context, request.row);
         const appId = rowAppId(context, row);
         if (appId === null) {
             throw new RequestError('not-found', `row ${row} links no app`);
         }
         return { ...readCells(context, row, names), appId };
     }
-    const row = requireRow(context, parseAppId(parameter.appId));
+    const row = requireRow(context, parseAppId(request.appId));
     // Only finding the row (`findRow`): skip the extra reads.
     return names.length ? readCells(context, row, names) : { row, values: {} };
 }
@@ -223,22 +234,16 @@ function applyWrites(sheet: GoogleAppsScript.Spreadsheet.Sheet, row: number, wri
     }
 }
 
-function parseWriteRequest(contents: string | undefined): WriteRequest {
-    let request: Partial<WriteRequest>;
-    try {
-        request = JSON.parse(contents ?? '') as Partial<WriteRequest>;
-    } catch {
-        throw new RequestError('invalid', 'body is not JSON');
-    }
-    if ((request.action !== 'update' && request.action !== 'append')
-        || typeof request.values !== 'object' || request.values === null) {
+function parseWriteRequest(request: RequestBody): WriteRequest {
+    const { action, values } = request;
+    if ((action !== 'update' && action !== 'append') || typeof values !== 'object' || values === null) {
         throw new RequestError('invalid', 'body needs action and values');
     }
     return {
-        action: request.action,
+        action,
         appId: parseAppId(request.appId),
-        values: request.values,
-        ...(request.row === undefined ? {} : { row: request.row }),
+        values: values as WriteRequest['values'],
+        ...(request.row === undefined ? {} : { row: request.row as number }),
     };
 }
 
@@ -288,39 +293,61 @@ function errorOutput(error: unknown): GoogleAppsScript.Content.TextOutput {
     return jsonOutput(JSON.stringify(body));
 }
 
-function checkToken(parameter: Record<string, string | undefined>): void {
+function parseBody(contents: string | undefined): RequestBody {
+    let body: unknown;
+    try {
+        body = JSON.parse(contents ?? '');
+    } catch {
+        throw new RequestError('invalid', 'body is not JSON');
+    }
+    if (typeof body !== 'object' || body === null || Array.isArray(body)) {
+        throw new RequestError('invalid', 'body is not a JSON object');
+    }
+    return body as RequestBody;
+}
+
+function checkToken(body: RequestBody): void {
     const expected = PropertiesService.getScriptProperties().getProperty(tokenProperty);
-    if (!isAuthorized(parameter[tokenParam], expected)) {
+    if (!isAuthorized(body.token, expected)) {
         throw new RequestError('unauthorized', 'missing or wrong token');
     }
 }
 
-/**
- * Without `action`: the whole-sheet dump. `action=row`: one row by app id or row number (see `rowAction`).
- */
-export function doGet(e: GoogleAppsScript.Events.DoGet): GoogleAppsScript.Content.TextOutput {
-    try {
-        checkToken(e.parameter);
-        if (e.parameter.action === rowAction) {
-            return jsonOutput(JSON.stringify(readRow(e.parameter)));
-        }
-        const cache = dumpCache();
-        let text = cache.get();
-        if (text === null) {
-            text = readDumpText();
-            cache.put(text);
-        }
-        return jsonOutput(text);
-    } catch (error) {
-        return errorOutput(error);
+function readDump(): string {
+    const cache = dumpCache();
+    let text = cache.get();
+    if (text === null) {
+        text = readDumpText();
+        cache.put(text);
     }
+    return text;
 }
 
-/** Body: `WriteRequest` as JSON, posted to `?token=`. */
+/**
+ * Refuses every GET: the token goes only in a POST body, so it never lands in a URL.
+ * `invalid` rather than `unauthorized`, so a userscript from before the switch reports an
+ * error instead of forgetting its saved token.
+ */
+export function doGet(): GoogleAppsScript.Content.TextOutput {
+    return errorOutput(new RequestError('invalid', 'GET is no longer supported; update the userscript'));
+}
+
+/** Every request: a `SheetApiRequestBody` as JSON, dispatched on its `action`. */
 export function doPost(e: GoogleAppsScript.Events.DoPost): GoogleAppsScript.Content.TextOutput {
     try {
-        checkToken(e.parameter);
-        return jsonOutput(JSON.stringify(writeRow(parseWriteRequest(e.postData.contents))));
+        const body = parseBody(e.postData.contents);
+        checkToken(body);
+        switch (body.action) {
+            case 'dump':
+                return jsonOutput(readDump());
+            case 'row':
+                return jsonOutput(JSON.stringify(readRow(body)));
+            case 'update':
+            case 'append':
+                return jsonOutput(JSON.stringify(writeRow(parseWriteRequest(body))));
+            default:
+                throw new RequestError('invalid', `unknown action ${String(body.action)}`);
+        }
     } catch (error) {
         return errorOutput(error);
     }

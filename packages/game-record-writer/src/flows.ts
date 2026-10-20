@@ -23,7 +23,7 @@ export interface SheetRowStore {
     append(appId: number, values: SheetRowValues): Promise<void>;
 }
 
-/** A `SheetRowStore` backed by the web app; `api` needs `postText` to write. */
+/** A `SheetRowStore` backed by the web app. */
 export function sheetApiRowStore(api: SheetApi): SheetRowStore {
     return {
         read: async (appId, columns) => (await api.readRow(appId, columns)).values,

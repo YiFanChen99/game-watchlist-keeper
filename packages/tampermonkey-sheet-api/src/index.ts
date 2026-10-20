@@ -68,7 +68,7 @@ export function createWithSheetApi(scriptName: string): WithSheetApi {
                 throw new Error('沒有輸入 Sheet API 的 token');
             }
             try {
-                return await run(createSheetApi({ webAppUrl: deployedWebAppUrl, token, fetchText, postText }));
+                return await run(createSheetApi({ webAppUrl: deployedWebAppUrl, token, postText }));
             } catch (error) {
                 if (!(error instanceof SheetApiUnauthorizedError)) {
                     throw error;
