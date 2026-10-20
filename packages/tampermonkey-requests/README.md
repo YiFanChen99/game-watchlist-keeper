@@ -2,7 +2,7 @@
 
 給 userscript 用的請求與 Tampermonkey 裡的憑證，四支 userscript（steam、steamgifts、itad-mail、sheet）共用：
 
-- `fetchText` / `postText`：用 `GM_xmlhttpRequest` 發請求（會跟著 redirect）。`postText` 注入給 `sheet-api`（所有請求都是 POST，token 放在 body），`fetchText` 注入給 `steam-info-scraper` 等抓網頁的 library。
+- `fetchText` / `postText`：用 `GM_xmlhttpRequest` 發請求（會跟著 redirect）。`postText` 注入給 `sheet-api`（所有請求都是 POST，token 放在 body），`fetchText` 注入給 `steam-info-scraper` 等抓網頁的 library，可以帶額外的 header（例如 ITAD 的 API key，不放 URL 是因為失敗時的錯誤訊息會帶 URL）。
 - `createWithSheetApi(scriptName)`：回傳 `withSheetApi(run)`，用存在 Tampermonkey 儲存（`sheetApiToken`）的 token 建立 `sheet-api` client 再執行 `run`。沒有 token 時跳出輸入框（開頭是 `scriptName`）；token 被拒絕時刪掉、再問一次，第二次還被拒絕就丟出錯誤。
 
 這是唯一直接呼叫 `GM_*` 的 library，其他 library 仍然只接收注入的 fetch 函式。

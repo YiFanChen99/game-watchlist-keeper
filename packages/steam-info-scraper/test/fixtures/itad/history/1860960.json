@@ -1,0 +1,38 @@
+[
+  {
+    "timestamp": "2025-01-02T20:14:29+01:00",
+    "deal": {
+      "price": {
+        "amount": 500
+      },
+      "regular": {
+        "amount": 500
+      },
+      "cut": 0
+    }
+  },
+  {
+    "timestamp": "2024-12-20T10:04:01+01:00",
+    "deal": {
+      "price": {
+        "amount": 250
+      },
+      "regular": {
+        "amount": 500
+      },
+      "cut": 50
+    }
+  },
+  {
+    "timestamp": "2024-12-11T18:11:44+01:00",
+    "deal": {
+      "price": {
+        "amount": 500
+      },
+      "regular": {
+        "amount": 500
+      },
+      "cut": 0
+    }
+  }
+]

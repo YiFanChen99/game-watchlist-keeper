@@ -77,6 +77,16 @@ const cases: Record<number, Expected> = {
         lacks: [],
         firstTags: ['免費遊玩', '多人線上戰術競技'],
     },
+    900270: {
+        name: 'Reventure',
+        originalPrice: 261,
+        releaseDate: { year: 2019, month: 6, day: 4 },
+        isEarlyAccess: false,
+        hasDemo: false,
+        supports: ['簡體中文', '英文'],
+        lacks: ['繁體中文'],
+        firstTags: ['冒險', '獨立'],
+    },
 };
 
 describe('parseStorePage', () => {

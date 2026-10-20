@@ -19,3 +19,13 @@ export {
 } from './appReviews';
 export { parseSteamDbPrices, readSteamDbPrices, steamDbPricesSelector, type SteamDbPrices } from './steamDb';
 export { fetchPlaytimeSample, fetchSteamSnapshot, type ParseHtml, type SteamSnapshot } from './snapshot';
+export {
+    fetchItadPriceHistory,
+    itadApiKeyHeaders,
+    itadHistoryUrl,
+    itadLookupUrl,
+    itadSteamShopId,
+    parseItadHistory,
+    parseItadLookup,
+    type ItadPriceRecord,
+} from './itad';

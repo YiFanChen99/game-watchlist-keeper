@@ -1,6 +1,6 @@
 # @watchlist/steam-info-scraper
 
-抓 Steam 並把一款遊戲的資料解析成原始值（數字、字串、日期），前身是 [tampermonkey--steam-info-scraper](https://github.com/YiFanChen99/tampermonkey--steam-info-scraper)（已封存）。
+抓 Steam 與 IsThereAnyDeal（ITAD），把一款遊戲的資料解析成原始值（數字、字串、日期），前身是 [tampermonkey--steam-info-scraper](https://github.com/YiFanChen99/tampermonkey--steam-info-scraper)（已封存）。
 
 不含任何 Sheet 格式；轉成 Sheet 欄位是 `@watchlist/game-record-writer` 的事。
 
@@ -12,8 +12,10 @@
 | `/appreviews` API（`reviewSummaryUrl`） | `parseReviewSummary` | 商店頁「所有評論」的正評數 / 總評論數 |
 | `/appreviews` API（`appReviewsUrl`） | `parseReviewSample` | 抽樣評論者的遊玩時數（分鐘） |
 | SteamDB 擴充套件的區塊 | `readSteamDbPrices` / `parseSteamDbPrices` | 史低價格 |
+| ITAD API（`itadLookupUrl`、`itadHistoryUrl`） | `parseItadLookup` / `parseItadHistory` | Steam AppID 對應的 ITAD 遊戲；Steam TW 的每一筆價格紀錄（價格、當時的原價、時間） |
 
 - `fetchSteamSnapshot(appId, fetchText)`：抓商店頁、評論數與時長抽樣，回傳 `{ page, reviews }`。評論數要等商店頁回來，才知道是不是免費遊戲。
+- `fetchItadPriceHistory(appId, fetchText, apiKey)`：查 ITAD 的遊戲，再抓它全部的價格紀錄，新的在前；ITAD 沒收錄時回 `null`。怎麼從紀錄算出史低是 `game-record-writer` 的事。
 - `parseReleaseDate`：讀 Steam 的日期文字（`2020 年 9 月 17 日`、`17 Sep, 2020` 等）；`2026 年第四季` 之類不是完整日期的，`date` 為 `null`。
 
 ## Usage
@@ -26,6 +28,8 @@
 - 時長抽樣用 `appReviewsUrl`：跟商店頁自己的評論列表一樣（近 30 天、依有幫助程度），只有 `language=all`，每次 `reviewSampleSize`（40）篇。抽到不到 `reviewSampleMinimumRatio`（8 成，32 篇）時依序改抽 `reviewSampleQueries` 的下一個：近 365 天依有幫助程度（`day_range` 最多只能到 365），再來是依發表時間由新到舊（`filter=recent`，不限期間）。
    - 範圍內一篇都沒有時，Steam 會自動放寬到全期；範圍內只有幾篇時就只回那幾篇，所以近一年只有零星評論的遊戲要靠 `recent`（實測 2026-10-18：403700 總共 300 篇，365 天只抽到 7 篇，`recent` 抽到 40 篇）。
    - `recent` 不當第一步：熱門遊戲的 40 篇只涵蓋最近一天，作者剛寫完評論、時數還沒累積，中位數會偏低（Hades 近 30 天有幫助的是 38H，`recent` 是 21–40H，同一小時內就會跳）。這組參數不影響評價度：`day_range`、`filter` 都不會改變 `query_summary`。
+- ITAD 的 API key 放在 `ITAD-API-Key` header（`itadApiKeyHeaders`），不放 URL：`fetchText` 失敗時的錯誤訊息會帶 URL。
+- ITAD 的價格紀錄只在價格變動時新增一筆；TW 的紀錄從 2024-12-11 才開始，那之前就有的遊戲第一筆都是這天。`/games/history/v2` 不帶 `since` 只回最近幾個月，所以固定帶 2010 年。
 - SteamDB 區塊不在抓下來的 HTML 裡，只能在使用者開著的商店頁上讀，而且擴充套件是在頁面載入後才加上去，要用到時再呼叫 `readSteamDbPrices(document)`；沒有區塊時回 `null`。
 
 ### 使用者
@@ -39,8 +43,8 @@
 
 ```sh
 pnpm --filter @watchlist/steam-info-scraper test       # vitest，跑 test/fixtures 的離線資料
-pnpm --filter @watchlist/steam-info-scraper fixtures   # 重新抓 fixtures（scripts/fetch-fixtures.mjs）
+pnpm --filter @watchlist/steam-info-scraper fixtures   # 重新抓 fixtures（scripts/fetch-fixtures.mjs）；有 ITAD_API_KEY 環境變數才抓 ITAD，加 --itad-only 只抓 ITAD
 ```
 
 - fixtures 涵蓋的情境與注意事項見 [`test/fixtures/README.md`](test/fixtures/README.md)。重抓後價格、評論數會變，測試的期望值要跟著更新。
-- `scripts/fetch-fixtures.mjs` 無法 import `src/urls.ts`，評論查詢參數是複製一份的，改 `appReviewsUrl` 時兩邊要一起改。
+- `scripts/fetch-fixtures.mjs` 無法 import `src/urls.ts`、`src/itad.ts`，評論查詢參數與 ITAD 的 URL 是複製一份的，改 `appReviewsUrl`、`itadLookupUrl`、`itadHistoryUrl` 時兩邊要一起改。

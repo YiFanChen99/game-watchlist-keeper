@@ -9,11 +9,14 @@ import {
 /** Tampermonkey storage key of the token the web app checks. */
 export const tokenKey = 'sheetApiToken';
 
-function request(details: { method: 'GET' | 'POST'; url: string; data?: string }): Promise<string> {
+function request(details: { method: 'GET' | 'POST'; url: string; data?: string; headers?: Record<string, string> | undefined }): Promise<string> {
     return new Promise((resolve, reject) => {
         GM_xmlhttpRequest({
             ...details,
-            ...(details.data === undefined ? {} : { headers: { 'Content-Type': 'text/plain;charset=utf-8' } }),
+            headers: {
+                ...details.headers,
+                ...(details.data === undefined ? {} : { 'Content-Type': 'text/plain;charset=utf-8' }),
+            },
             onload: (response) => {
                 if (response.status < 200 || response.status >= 300) {
                     reject(new Error(`Failed to ${details.method} ${details.url}: ${response.status}`));
@@ -29,7 +32,7 @@ function request(details: { method: 'GET' | 'POST'; url: string; data?: string }
 }
 
 /** GET through `GM_xmlhttpRequest`, which follows redirects; needs `@grant GM_xmlhttpRequest` and an `@connect` per host. */
-export const fetchText: FetchText = url => request({ method: 'GET', url });
+export const fetchText: FetchText = (url, headers) => request({ method: 'GET', url, headers });
 
 /** POST through `GM_xmlhttpRequest`, as `fetchText`. */
 export const postText: PostText = (url, body) => request({ method: 'POST', url, data: body });

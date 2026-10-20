@@ -1,0 +1,14 @@
+[
+  {
+    "timestamp": "2026-03-05T19:00:23+01:00",
+    "deal": {
+      "price": {
+        "amount": 499
+      },
+      "regular": {
+        "amount": 499
+      },
+      "cut": 0
+    }
+  }
+]

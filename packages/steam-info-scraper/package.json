@@ -2,7 +2,7 @@
   "name": "@watchlist/steam-info-scraper",
   "version": "0.1.0",
   "private": true,
-  "description": "Fetch and parse a game's Steam data (store page, reviews, SteamDB block) into plain values, without sheet formats",
+  "description": "Fetch and parse a game's Steam data (store page, reviews, SteamDB block) and IsThereAnyDeal price history into plain values, without sheet formats",
   "license": "MIT",
   "type": "module",
   "sideEffects": false,

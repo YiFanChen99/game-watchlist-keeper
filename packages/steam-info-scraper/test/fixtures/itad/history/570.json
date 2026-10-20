@@ -1,0 +1,14 @@
+[
+  {
+    "timestamp": "2024-12-11T15:02:21+01:00",
+    "deal": {
+      "price": {
+        "amount": 0
+      },
+      "regular": {
+        "amount": 0
+      },
+      "cut": 0
+    }
+  }
+]

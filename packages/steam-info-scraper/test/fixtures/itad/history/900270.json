@@ -1,0 +1,242 @@
+[
+  {
+    "timestamp": "2026-10-08T19:59:55+02:00",
+    "deal": {
+      "price": {
+        "amount": 261
+      },
+      "regular": {
+        "amount": 261
+      },
+      "cut": 0
+    }
+  },
+  {
+    "timestamp": "2026-10-01T19:29:50+02:00",
+    "deal": {
+      "price": {
+        "amount": 65
+      },
+      "regular": {
+        "amount": 261
+      },
+      "cut": 75
+    }
+  },
+  {
+    "timestamp": "2026-05-28T19:24:17+02:00",
+    "deal": {
+      "price": {
+        "amount": 261
+      },
+      "regular": {
+        "amount": 261
+      },
+      "cut": 0
+    }
+  },
+  {
+    "timestamp": "2026-03-26T18:42:40+01:00",
+    "deal": {
+      "price": {
+        "amount": 102
+      },
+      "regular": {
+        "amount": 102
+      },
+      "cut": 0
+    }
+  },
+  {
+    "timestamp": "2026-03-19T18:41:59+01:00",
+    "deal": {
+      "price": {
+        "amount": 17
+      },
+      "regular": {
+        "amount": 102
+      },
+      "cut": 83
+    }
+  },
+  {
+    "timestamp": "2026-01-05T20:01:41+01:00",
+    "deal": {
+      "price": {
+        "amount": 102
+      },
+      "regular": {
+        "amount": 102
+      },
+      "cut": 0
+    }
+  },
+  {
+    "timestamp": "2025-12-18T21:31:54+01:00",
+    "deal": {
+      "price": {
+        "amount": 17
+      },
+      "regular": {
+        "amount": 102
+      },
+      "cut": 83
+    }
+  },
+  {
+    "timestamp": "2025-12-01T19:35:09+01:00",
+    "deal": {
+      "price": {
+        "amount": 102
+      },
+      "regular": {
+        "amount": 102
+      },
+      "cut": 0
+    }
+  },
+  {
+    "timestamp": "2025-11-30T13:45:19+01:00",
+    "deal": {
+      "price": {
+        "amount": 18
+      },
+      "regular": {
+        "amount": 102
+      },
+      "cut": 82
+    }
+  },
+  {
+    "timestamp": "2025-10-06T19:41:00+02:00",
+    "deal": {
+      "price": {
+        "amount": 102
+      },
+      "regular": {
+        "amount": 102
+      },
+      "cut": 0
+    }
+  },
+  {
+    "timestamp": "2025-09-29T22:40:29+02:00",
+    "deal": {
+      "price": {
+        "amount": 19
+      },
+      "regular": {
+        "amount": 102
+      },
+      "cut": 81
+    }
+  },
+  {
+    "timestamp": "2025-08-28T07:00:23+02:00",
+    "deal": {
+      "price": {
+        "amount": 102
+      },
+      "regular": {
+        "amount": 102
+      },
+      "cut": 0
+    }
+  },
+  {
+    "timestamp": "2025-07-10T19:43:11+02:00",
+    "deal": {
+      "price": {
+        "amount": 22
+      },
+      "regular": {
+        "amount": 22
+      },
+      "cut": 0
+    }
+  },
+  {
+    "timestamp": "2025-06-27T00:13:30+02:00",
+    "deal": {
+      "price": {
+        "amount": 11
+      },
+      "regular": {
+        "amount": 22
+      },
+      "cut": 50
+    }
+  },
+  {
+    "timestamp": "2025-04-06T00:15:22+02:00",
+    "deal": {
+      "price": {
+        "amount": 22
+      },
+      "regular": {
+        "amount": 22
+      },
+      "cut": 0
+    }
+  },
+  {
+    "timestamp": "2025-03-20T18:49:09+01:00",
+    "deal": {
+      "price": {
+        "amount": 152
+      },
+      "regular": {
+        "amount": 152
+      },
+      "cut": 0
+    }
+  },
+  {
+    "timestamp": "2025-03-13T20:21:40+01:00",
+    "deal": {
+      "price": {
+        "amount": 47
+      },
+      "regular": {
+        "amount": 152
+      },
+      "cut": 69
+    }
+  },
+  {
+    "timestamp": "2025-01-02T19:38:03+01:00",
+    "deal": {
+      "price": {
+        "amount": 152
+      },
+      "regular": {
+        "amount": 152
+      },
+      "cut": 0
+    }
+  },
+  {
+    "timestamp": "2024-12-19T21:54:28+01:00",
+    "deal": {
+      "price": {
+        "amount": 34
+      },
+      "regular": {
+        "amount": 152
+      },
+      "cut": 78
+    }
+  },
+  {
+    "timestamp": "2024-12-11T16:26:51+01:00",
+    "deal": {
+      "price": {
+        "amount": 152
+      },
+      "regular": {
+        "amount": 152
+      },
+      "cut": 0
+    }
+  }
+]
