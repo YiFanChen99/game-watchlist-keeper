@@ -1,10 +1,10 @@
 # @watchlist/apps-script
 
-子元件1：Google Apps Script Web App，負責查詢與寫入遊戲追蹤 Sheet。這個 script 綁定在 Sheet 上。
+Sheet 的 Web App（server 端），負責查詢與寫入遊戲追蹤 Sheet，綁定在 Sheet 上。請求 / 回應的型別、錯誤碼、傾印列規則都定義在 `@watchlist/sheet-api`，這裡只實作；userscript 透過同一個 package 的 client 呼叫。
 
 ## 行為
 
-所有請求都是 `POST`，body 是 JSON 的 `SheetApiRequestBody`：`{ token, action, ... }`。`token` 跟 script property `API_TOKEN` 比對，沒設定 `API_TOKEN` 時一律拒絕；token 只放在 body，不放在 URL，免得留在 log 或瀏覽紀錄裡。格式與型別定義在 `@watchlist/sheet-api`。拒絕時回 `{ error, message }`（HTTP 仍是 200）。body 不是 JSON 物件時回 `invalid`；先比對 token 再看 `action`。
+所有請求都是 `POST`，body 是 JSON 的 `SheetApiRequestBody`：`{ token, action, ... }`。`token` 跟 script property `API_TOKEN` 比對，沒設定 `API_TOKEN` 時一律拒絕；token 只放在 body，不放在 URL，免得留在 log 或瀏覽紀錄裡。拒絕時回 `{ error, message }`（HTTP 仍是 200）。body 不是 JSON 物件時回 `invalid`；先比對 token 再看 `action`。
 
 - `doGet`：一律回 `invalid`（訊息請使用者更新 userscript）。保留它是讓 GET 拿到正常的錯誤，而不是 Apps Script 找不到函式的頁面；不回 `unauthorized`，是因為改成 POST 之前的舊版 userscript 收到 `unauthorized` 會刪掉存好的 token。
 - `doPost`：依 `action` 分派：

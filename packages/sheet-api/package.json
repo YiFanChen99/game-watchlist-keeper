@@ -2,7 +2,7 @@
   "name": "@watchlist/sheet-api",
   "version": "0.1.0",
   "private": true,
-  "description": "Client for the Apps Script web app that reads and writes the watchlist sheet",
+  "description": "Protocol and client for the Apps Script web app that reads and writes the watchlist sheet",
   "license": "MIT",
   "type": "module",
   "exports": {
