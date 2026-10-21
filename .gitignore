@@ -4,3 +4,4 @@ _site/
 PLAN.md
 QUESTIONS.md
 .codex/
+.env.local
