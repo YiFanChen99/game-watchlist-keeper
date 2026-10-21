@@ -27,6 +27,7 @@ const page: StorePageInfo = {
     genres: [],
     isDelisted: false,
 };
+const releasedPage: StorePageInfo = { ...page, isEarlyAccess: false };
 const playtime: PlaytimeStats = { medianHours: 125, percentRankHours: 725 };
 const snapshot: SteamSnapshot = {
     page,
@@ -49,43 +50,53 @@ describe('buildDetail (COLUMNS.md 備註：新增)', () => {
     });
 
     it('omits the early access part and marks unknown numbers', () => {
-        const released: StorePageInfo = { ...page, isEarlyAccess: false };
-        expect(buildDetail(released, { medianHours: 3, percentRankHours: null })).toBe(`TODO。中位3H，${percentRank} -H。`);
-        expect(buildDetail(released, { medianHours: null, percentRankHours: null })).toBe(`TODO。中位-H，${percentRank} -H。`);
+        expect(buildDetail(releasedPage, { medianHours: 3, percentRankHours: null })).toBe(`TODO。中位3H，${percentRank} -H。`);
+        expect(buildDetail(releasedPage, { medianHours: null, percentRankHours: null })).toBe(`TODO。中位-H，${percentRank} -H。`);
     });
 });
 
 describe('mergeDetail (COLUMNS.md 備註：更新)', () => {
     it('replaces only the playtime part, keeping everything else, from the older 3rd.高 format too', () => {
-        expect(mergeDetail('Roguelike 牌組構築。26/03EA。中位40H，3rd.高300H。等正式版', playtime))
+        expect(mergeDetail('Roguelike 牌組構築。26/03EA。中位40H，3rd.高300H。等正式版', releasedPage, playtime))
             .toBe(`Roguelike 牌組構築。26/03EA。中位125H，${percentRank} 725H。等正式版`);
     });
 
     it('replaces a playtime part in the PR format, written with any percent rank', () => {
-        expect(mergeDetail(`好玩。中位40H，${percentRank} 300H。等正式版`, playtime)).toBe(`好玩。中位125H，${percentRank} 725H。等正式版`);
-        expect(mergeDetail(`好玩。中位40H，${otherPercentRank} 300H。等正式版`, playtime)).toBe(`好玩。中位125H，${percentRank} 725H。等正式版`);
+        expect(mergeDetail(`好玩。中位40H，${percentRank} 300H。等正式版`, releasedPage, playtime)).toBe(`好玩。中位125H，${percentRank} 725H。等正式版`);
+        expect(mergeDetail(`好玩。中位40H，${otherPercentRank} 300H。等正式版`, releasedPage, playtime)).toBe(`好玩。中位125H，${percentRank} 725H。等正式版`);
     });
 
     it('replaces NaN values left by the legacy scraper', () => {
-        expect(mergeDetail('英。中位NaNH，3rd.高NaNH。', playtime)).toBe(`英。中位125H，${percentRank} 725H。`);
+        expect(mergeDetail('英。中位NaNH，3rd.高NaNH。', releasedPage, playtime)).toBe(`英。中位125H，${percentRank} 725H。`);
     });
 
     it('replaces a hand-written playtime part missing an H', () => {
-        expect(mergeDetail('好玩。中位13，3rd.高28H。等正式版', playtime)).toBe(`好玩。中位125H，${percentRank} 725H。等正式版`);
-        expect(mergeDetail(`好玩。中位13H，${percentRank} 28。`, playtime)).toBe(`好玩。中位125H，${percentRank} 725H。`);
+        expect(mergeDetail('好玩。中位13，3rd.高28H。等正式版', releasedPage, playtime)).toBe(`好玩。中位125H，${percentRank} 725H。等正式版`);
+        expect(mergeDetail(`好玩。中位13H，${percentRank} 28。`, releasedPage, playtime)).toBe(`好玩。中位125H，${percentRank} 725H。`);
     });
 
     it('appends playtime when the cell has none', () => {
-        expect(mergeDetail('等正式版。', playtime)).toBe(`等正式版。中位125H，${percentRank} 725H。`);
+        expect(mergeDetail('等正式版。', releasedPage, playtime)).toBe(`等正式版。中位125H，${percentRank} 725H。`);
     });
 
     it('separates an appended playtime with 。 unless the cell ends with a full-width symbol', () => {
-        expect(mergeDetail('等正式版', playtime)).toBe(`等正式版。中位125H，${percentRank} 725H。`);
-        expect(mergeDetail('Roguelike', playtime)).toBe(`Roguelike。中位125H，${percentRank} 725H。`);
-        expect(mergeDetail('好玩!', playtime)).toBe(`好玩!。中位125H，${percentRank} 725H。`);
-        expect(mergeDetail('好玩！', playtime)).toBe(`好玩！中位125H，${percentRank} 725H。`);
-        expect(mergeDetail('（等正式版）', playtime)).toBe(`（等正式版）中位125H，${percentRank} 725H。`);
-        expect(mergeDetail('', playtime)).toBe(`中位125H，${percentRank} 725H。`);
+        expect(mergeDetail('等正式版', releasedPage, playtime)).toBe(`等正式版。中位125H，${percentRank} 725H。`);
+        expect(mergeDetail('Roguelike', releasedPage, playtime)).toBe(`Roguelike。中位125H，${percentRank} 725H。`);
+        expect(mergeDetail('好玩!', releasedPage, playtime)).toBe(`好玩!。中位125H，${percentRank} 725H。`);
+        expect(mergeDetail('好玩！', releasedPage, playtime)).toBe(`好玩！中位125H，${percentRank} 725H。`);
+        expect(mergeDetail('（等正式版）', releasedPage, playtime)).toBe(`（等正式版）中位125H，${percentRank} 725H。`);
+        expect(mergeDetail('', releasedPage, playtime)).toBe(`中位125H，${percentRank} 725H。`);
+    });
+
+    it('adds YY/MMEA。 before the playtime part of an early access game whose cell has no EA', () => {
+        expect(mergeDetail('好玩。中位40H，3rd.高300H。等正式版', page, playtime)).toBe(`好玩。26/03EA。中位125H，${percentRank} 725H。等正式版`);
+        expect(mergeDetail('好玩', page, playtime)).toBe(`好玩。26/03EA。中位125H，${percentRank} 725H。`);
+        expect(mergeDetail('', page, playtime)).toBe(`26/03EA。中位125H，${percentRank} 725H。`);
+    });
+
+    it('keeps an EA already in the cell, wherever and however it is written', () => {
+        expect(mergeDetail('好玩。23/11EA。中位40H，3rd.高300H。', page, playtime)).toBe(`好玩。23/11EA。中位125H，${percentRank} 725H。`);
+        expect(mergeDetail('好玩。中位40H，3rd.高300H。EA 等正式版', page, playtime)).toBe(`好玩。中位125H，${percentRank} 725H。EA 等正式版`);
     });
 });
 
@@ -222,9 +233,9 @@ describe('planRefresh', () => {
     });
 
     it.each(['3rd.高', `${otherPercentRank} `])('reports a %s part as changed even with the same numbers, and rewrites it', (label) => {
-        const { updates, changes } = planRefresh(snapshot, { [Column.detail]: `好玩。中位125H，${label}725H。` }, today);
+        const { updates, changes } = planRefresh(snapshot, { [Column.detail]: `好玩。26/03EA。中位125H，${label}725H。` }, today);
 
-        expect(updates[Column.detail]).toBe(`好玩。中位125H，${percentRank} 725H。`);
+        expect(updates[Column.detail]).toBe(`好玩。26/03EA。中位125H，${percentRank} 725H。`);
         expect(changes).toEqual([
             { column: Column.detail, oldValue: `中位125H，${label}725H。`, newValue: `中位125H，${percentRank} 725H。`, delta: null },
         ]);

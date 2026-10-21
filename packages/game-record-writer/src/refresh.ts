@@ -196,7 +196,8 @@ export function formatPrice(price: number): number {
  * - The lowest discount is `options.lowestOff`, planned by `planLowestOff`.
  * - The update date becomes `today`.
  * - The special cell gets its language mark and `Demo` tag refreshed; see `mergeSpecial`.
- * - The detail cell only gets its playtime part replaced; see `mergeDetail`.
+ * - The detail cell only gets its playtime part replaced, and a missing early access part added;
+ *   see `mergeDetail`.
  * - Changes to the special cell and the detail cell's playtime part are reported too.
  * - Name, want level and mode are never touched.
  *
@@ -245,7 +246,7 @@ export function planRefresh(
     const oldDetail = oldRow[Column.detail];
     const detail = isBlank(oldDetail)
         ? buildDetail(page, playtime, options.features)
-        : mergeDetail(String(oldDetail).trim(), playtime);
+        : mergeDetail(String(oldDetail).trim(), page, playtime);
     updates[Column.detail] = detail;
 
     for (const change of [specialChange(oldSpecial, special), detailChange(oldDetail, detail)]) {
