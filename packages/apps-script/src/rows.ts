@@ -15,7 +15,7 @@ export const headerRow = 1;
 /** First row that holds a game. */
 export const firstDataRow = 2;
 /** `append` inserts a blank row here and fills it; the rows from here move down one. */
-export const appendRow = 4;
+export const appendRow = 8;
 
 /** A refusal to send back as `SheetApiErrorBody`. */
 export class RequestError extends Error {
