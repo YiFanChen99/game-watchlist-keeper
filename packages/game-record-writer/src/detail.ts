@@ -5,9 +5,9 @@ import { playtimePercentRank, type PlaytimeStats } from './playtime';
 
 /**
  * Matches what `formatPlaytime` writes, and the older `中位<n>H，3rd.高<n>H。` it replaces, including
- * `NaN` values from the legacy scraper.
+ * `NaN` values from the legacy scraper and hand-written numbers missing their `H`, e.g. `中位13，3rd.高28H。`.
  */
-const playtimePattern = /中位[^，。]*H，(?:3rd\.高|PR\d+ )[^。]*H。/;
+const playtimePattern = /中位[^，。]*，(?:3rd\.高|PR\d+ )[^。]*。/;
 
 /** A trailing full-width symbol (CJK punctuation or a full-width ASCII symbol), e.g. `。`, `）`, `！`. */
 const endsWithFullWidthSymbol = /[\u3000-\u303F\uFF01-\uFF0F\uFF1A-\uFF20\uFF3B-\uFF40\uFF5B-\uFF65]$/;

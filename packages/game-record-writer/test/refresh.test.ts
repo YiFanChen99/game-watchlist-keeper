@@ -70,6 +70,11 @@ describe('mergeDetail (COLUMNS.md 備註：更新)', () => {
         expect(mergeDetail('英。中位NaNH，3rd.高NaNH。', playtime)).toBe(`英。中位125H，${percentRank} 725H。`);
     });
 
+    it('replaces a hand-written playtime part missing an H', () => {
+        expect(mergeDetail('好玩。中位13，3rd.高28H。等正式版', playtime)).toBe(`好玩。中位125H，${percentRank} 725H。等正式版`);
+        expect(mergeDetail(`好玩。中位13H，${percentRank} 28。`, playtime)).toBe(`好玩。中位125H，${percentRank} 725H。`);
+    });
+
     it('appends playtime when the cell has none', () => {
         expect(mergeDetail('等正式版。', playtime)).toBe(`等正式版。中位125H，${percentRank} 725H。`);
     });
