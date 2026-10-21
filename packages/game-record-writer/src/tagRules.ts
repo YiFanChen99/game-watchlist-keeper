@@ -60,8 +60,8 @@ function splitKeywords(cell: string | undefined): string[] {
 /**
  * Read the tag rules worksheet as the web app sends it.
  *
- * Blank rows are skipped. A row with a target other than 模式 / 備註, or without an output or
- * keywords, is left out and reported. An output repeated in one target column is reported too:
+ * The rules end at the first blank row, so notes can follow below it. A row with a target other
+ * than 模式 / 備註, or without an output or keywords, is left out and reported. An output repeated in one target column is reported too:
  * its place in the order would depend on which row matched first.
  *
  * @param cells Displayed values, header row first; `null` when the sheet has no such worksheet.
@@ -81,10 +81,8 @@ export function parseTagRules(cells: readonly (readonly string[])[] | null): Tag
     const rules: TagRule[] = [];
     const problems: string[] = [];
     const seen = new Set<string>();
-    rows.forEach((cells, offset) => {
-        if (cells.every(value => value.trim() === '')) {
-            return;
-        }
+    const blank = rows.findIndex(cells => cells.every(value => value.trim() === ''));
+    rows.slice(0, blank === -1 ? rows.length : blank).forEach((cells, offset) => {
         const row = offset + 2;
         const where = `標籤規則第 ${row} 列`;
         const output = cell(cells, TagRuleColumn.output);

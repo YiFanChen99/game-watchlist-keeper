@@ -39,11 +39,23 @@ describe('parseTagRules', () => {
         expect(rules).toMatchObject([{ output: '俯視角', target: Column.detail, userTags: ['俯視視角'], genres: [] }]);
     });
 
-    it('skips blank rows, and leaves out and reports rows it cannot use', () => {
+    it('ends the rules at the first blank row, so notes below it are not read', () => {
         const { rules, problems } = parseTagRules([
             header,
             ['', '多人', '模式', '合作', '', ''],
-            ['', '', '', '', '', ''],
+            ['', ' ', '', '', '', ''],
+            ['', '備註：Categories 用子字串比對', '', '', '', ''],
+            ['', '動作', '模式', '動作', '', ''],
+        ]);
+
+        expect(rules.map(rule => rule.output)).toEqual(['多人']);
+        expect(problems).toEqual([]);
+    });
+
+    it('leaves out and reports rows it cannot use', () => {
+        const { rules, problems } = parseTagRules([
+            header,
+            ['', '多人', '模式', '合作', '', ''],
             ['', '動作', '特', '動作', '', ''],
             ['', '', '模式', '砍殺', '', ''],
             ['', '砍殺', '模式', '', '', ''],
@@ -51,9 +63,9 @@ describe('parseTagRules', () => {
 
         expect(rules.map(rule => rule.output)).toEqual(['多人']);
         expect(problems).toEqual([
-            '標籤規則第 4 列的目標欄「特」不是「模式」或「備註」，略過。',
-            '標籤規則第 5 列沒有輸出，略過。',
-            '標籤規則第 6 列沒有關鍵字，略過。',
+            '標籤規則第 3 列的目標欄「特」不是「模式」或「備註」，略過。',
+            '標籤規則第 4 列沒有輸出，略過。',
+            '標籤規則第 5 列沒有關鍵字，略過。',
         ]);
     });
 
