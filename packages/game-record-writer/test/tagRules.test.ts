@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { Column, matchTagRules, parseTagRules } from '../src';
+import { Column, formatTagRuleNotes, matchTagRules, parseTagRules } from '../src';
 
 /** The 標籤規則 worksheet as the web app sends it: column A blank, like the user's. */
 const header = ['', '輸出', '目標欄', 'User Tags', 'Categories', 'Genres'];
@@ -112,5 +112,12 @@ describe('matchTagRules', () => {
         expect(only('', '', '動作')).toEqual(['x']);
         expect(only('', '分割螢幕', '')).toEqual(['x']);
         expect(only('', '本地合作', '')).toEqual([]);
+    });
+});
+
+describe('formatTagRuleNotes', () => {
+    it('tells what the rules wrote, TODO where they wrote nothing, then each problem', () => {
+        expect(formatTagRuleNotes({ [Column.mode]: ['多人', '動作'], [Column.detail]: [] }, ['Sheet 沒有「標籤規則」分頁']))
+            .toEqual(['模式：多人 動作；遊戲特點：TODO', 'Sheet 沒有「標籤規則」分頁。']);
     });
 });

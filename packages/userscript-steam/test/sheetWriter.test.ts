@@ -115,9 +115,18 @@ const existingRow: Awaited<ReturnType<SheetApi['readRow']>> = {
     },
 };
 
+/**
+ * The check's answer when the sheet lacks the game: one tag rule, which Slay the Spire 2 matches
+ * by its 線上合作 category.
+ */
+const noRow: Awaited<ReturnType<SheetApi['findRow']>> = {
+    row: null,
+    tagRules: [['', '輸出', '目標欄', 'User Tags', 'Categories', 'Genres'], ['', '多人', '模式', '', '線上合作', '']],
+};
+
 /** The sheet already has the game. */
 function rowExists(): void {
-    api.findRow.mockResolvedValue(existingRow.row);
+    api.findRow.mockResolvedValue({ row: existingRow.row });
     api.readRow.mockResolvedValue(existingRow);
 }
 
@@ -127,7 +136,7 @@ beforeEach(() => {
     steamFetchText.mockImplementation(fixtureFetchText);
     savedItadApiKey = undefined;
     forgetItadApiKeyIfRefused.mockImplementation(error => error instanceof HttpStatusError && error.status === 403);
-    api.findRow.mockResolvedValue(null);
+    api.findRow.mockResolvedValue(noRow);
     api.updateRow.mockResolvedValue({ row: 7 });
     api.appendRow.mockResolvedValue({ row: 4 });
 });
@@ -303,9 +312,10 @@ describe('update', () => {
         expect(status()).toBe('已更新。');
     });
 
-    it('offers to add the game again when its row is gone', async () => {
+    it('offers to add the game again when its row is gone, with the tag rules a new check brings', async () => {
         await start();
         api.readRow.mockRejectedValueOnce(new SheetApiError('not-found'));
+        api.findRow.mockResolvedValue(noRow);
 
         sheetButton().click();
         await settle();
@@ -313,11 +323,12 @@ describe('update', () => {
         expect(sheetButton().textContent).toBe('＋ 新增');
         expect(status()).toBe('Sheet 找不到這個遊戲了，可以重新新增。');
         expect(api.updateRow).not.toHaveBeenCalled();
+        expect(api.findRow).toHaveBeenCalledTimes(2);
 
         sheetButton().click();
         await settle();
 
-        expect(api.appendRow).toHaveBeenCalledWith(appId, expect.anything());
+        expect(api.appendRow).toHaveBeenCalledWith(appId, expect.objectContaining({ [Column.mode]: '多人' }));
         expect(sheetButton().textContent).toBe('↻ 更新');
     });
 
@@ -371,7 +382,7 @@ describe('add', () => {
             [Column.wantLevel]: '?',
         }));
         expect(sheetButton().textContent).toBe('↻ 更新');
-        expect(status()).toBe('已新增。\n沒有 ITAD 的 API key，也沒有 SteamDB 區塊，最低off 寫 0。');
+        expect(status()).toBe('已新增。\n模式：多人；遊戲特點：TODO\n沒有 ITAD 的 API key，也沒有 SteamDB 區塊，最低off 寫 0。');
         vi.advanceTimersByTime(messageLifetimeMs);
         expect(status()).toBeNull();
     });
@@ -384,7 +395,7 @@ describe('add', () => {
         await settle();
 
         expect(api.appendRow).toHaveBeenCalledWith(appId, expect.objectContaining({ [Column.lowestOff]: '!30' }));
-        expect(status()).toBe('已新增。\n沒有 ITAD 的 API key，最低off 只看 SteamDB 區塊，前面加上 !。');
+        expect(status()).toBe('已新增。\n模式：多人；遊戲特點：TODO\n沒有 ITAD 的 API key，最低off 只看 SteamDB 區塊，前面加上 !。');
     });
 
     it('takes 最低off from ITAD with the saved key, without a note', async () => {
@@ -395,7 +406,42 @@ describe('add', () => {
         await settle();
 
         expect(api.appendRow).toHaveBeenCalledWith(appId, expect.objectContaining({ [Column.lowestOff]: 0 }));
-        expect(status()).toBe('已新增。');
+        expect(status()).toBe('已新增。\n模式：多人；遊戲特點：TODO');
+    });
+
+    it('fills 模式 and 備註 from the tag rules the check brought', async () => {
+        savedItadApiKey = fixtureItadApiKey;
+        api.findRow.mockResolvedValue({
+            row: null,
+            tagRules: [
+                ['輸出', '目標欄', 'User Tags', 'Categories', 'Genres'],
+                ['RL', '模式', '輕度 Rogue、動作類 Rogue', '', ''],
+                ['多人', '模式', '', '線上合作', ''],
+                ['卡牌', '備註', '卡牌遊戲', '', ''],
+                ['動作', '模式', '動作', '', '動作'],
+            ],
+        });
+        await start();
+
+        sheetButton().click();
+        await settle();
+
+        const sent = api.appendRow.mock.calls[0]![1];
+        expect(sent[Column.mode]).toBe('RL 多人');
+        expect(sent[Column.detail]).toMatch(/^卡牌。26\/03EA。/);
+        expect(status()).toBe('已新增。\n模式：RL 多人；遊戲特點：卡牌');
+    });
+
+    it('adds with TODO and says what is wrong with the tag rules', async () => {
+        savedItadApiKey = fixtureItadApiKey;
+        api.findRow.mockResolvedValue({ row: null, tagRules: null });
+        await start();
+
+        sheetButton().click();
+        await settle();
+
+        expect(api.appendRow).toHaveBeenCalledWith(appId, expect.objectContaining({ [Column.mode]: 'TODO' }));
+        expect(status()).toBe('已新增。\n模式：TODO；遊戲特點：TODO\nSheet 沒有「標籤規則」分頁。');
     });
 
     it('updates on the next click once added', async () => {

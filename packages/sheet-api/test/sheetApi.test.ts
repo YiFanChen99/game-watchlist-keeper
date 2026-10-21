@@ -55,12 +55,16 @@ describe('createSheetApi() single rows', () => {
         expect(result).toEqual({ row: 12, appId: 570, values: { 名稱: 'Dota 2' }, url: 'https://sheet#gid=1&range=12:12' });
     });
 
-    it('finds a row, or null when the sheet has no such app id', async () => {
-        expect(await createSheetApi({ webAppUrl, token, postText: respond('{"row":7,"values":{}}') }).findRow(570)).toBe(7);
-        expect(await createSheetApi({ webAppUrl, token, postText: respond('{"error":"not-found"}') }).findRow(570)).toBeNull();
+    it('finds a row, or the tag rules when the sheet has no such app id', async () => {
+        const postText = vi.fn(respond('{"row":7}'));
+
+        expect(await createSheetApi({ webAppUrl, token, postText }).findRow(570)).toEqual({ row: 7 });
+        expect(sentBodies(postText)).toEqual([{ token, action: 'find', appId: 570 }]);
+        expect(await createSheetApi({ webAppUrl, token, postText: respond('{"row":null,"tagRules":[["輸出"]]}') }).findRow(570))
+            .toEqual({ row: null, tagRules: [['輸出']] });
     });
 
-    it('still throws other errors from findRow', async () => {
+    it('throws errors from findRow', async () => {
         const postText = respond('{"error":"unauthorized"}');
 
         await expect(createSheetApi({ webAppUrl, token, postText }).findRow(570))

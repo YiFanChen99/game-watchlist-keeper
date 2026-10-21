@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { doGet, doPost, isAuthorized, WantToOwned } from '../src/main';
+import { doGet, doPost, isAuthorized, onEdit, WantToOwned } from '../src/main';
 
 describe('isAuthorized', () => {
     it('accepts only the exact token', () => {
@@ -86,6 +86,73 @@ describe('doPost', () => {
 
     it('refuses columns that are not an array of names', () => {
         expect(post({ token, action: 'row', appId: 570, columns: '名稱,特' })).toMatchObject({ error: 'invalid' });
+    });
+});
+
+describe('find', () => {
+    const tagRules = [['', '輸出', '目標欄'], ['', '多人', '模式']];
+    let hasTagRuleSheet: boolean;
+    const readTagRuleSheet = vi.fn(() => tagRules);
+
+    /** A sheet whose only game, Dota 2, is in row 2, and a working cache. */
+    beforeEach(() => {
+        hasTagRuleSheet = true;
+        const stored: Record<string, string> = {};
+        vi.stubGlobal('CacheService', {
+            getScriptCache: () => ({
+                get: (key: string) => stored[key] ?? null,
+                getAll: (keys: string[]) => Object.fromEntries(keys.filter(key => key in stored).map(key => [key, stored[key]])),
+                putAll: (values: Record<string, string>) => Object.assign(stored, values),
+                remove: (key: string) => delete stored[key],
+            }),
+        });
+        vi.stubGlobal('Utilities', {
+            base64Encode: (text: string) => text,
+            base64Decode: (text: string) => text,
+            gzip: (blob: unknown) => blob,
+            ungzip: (blob: unknown) => blob,
+            newBlob: (text: string) => ({ getDataAsString: () => text, getBytes: () => text }),
+        });
+        const steam = {
+            getLastColumn: () => 1,
+            getLastRow: () => 2,
+            getRange: () => ({
+                getValues: () => [['名稱']],
+                getFormulas: () => [['=HYPERLINK("https://store.steampowered.com/app/570/","Dota 2")']],
+            }),
+        };
+        const tagRuleSheet = { getDataRange: () => ({ getDisplayValues: readTagRuleSheet }) };
+        vi.stubGlobal('SpreadsheetApp', {
+            getActiveSpreadsheet: () => ({
+                getSheetByName: (name: string) => (name === 'STEAM' ? steam : name === '標籤規則' && hasTagRuleSheet ? tagRuleSheet : null),
+            }),
+        });
+        readTagRuleSheet.mockClear();
+    });
+
+    it('answers the row alone when the sheet has the app id', () => {
+        expect(post({ token, action: 'find', appId: 570 })).toEqual({ row: 2 });
+        expect(readTagRuleSheet).not.toHaveBeenCalled();
+    });
+
+    it('sends the tag rules worksheet without a row, cached until a hand edit', () => {
+        expect(post({ token, action: 'find', appId: 1 })).toEqual({ row: null, tagRules });
+        expect(post({ token, action: 'find', appId: 2 })).toEqual({ row: null, tagRules });
+        expect(readTagRuleSheet).toHaveBeenCalledTimes(1);
+
+        onEdit();
+        post({ token, action: 'find', appId: 1 });
+        expect(readTagRuleSheet).toHaveBeenCalledTimes(2);
+    });
+
+    it('sends null rules without the worksheet', () => {
+        hasTagRuleSheet = false;
+
+        expect(post({ token, action: 'find', appId: 1 })).toEqual({ row: null, tagRules: null });
+    });
+
+    it('refuses a bad app id', () => {
+        expect(post({ token, action: 'find', appId: 'x' })).toMatchObject({ error: 'invalid' });
     });
 });
 

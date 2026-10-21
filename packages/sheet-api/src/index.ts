@@ -74,6 +74,24 @@ export interface RowRequest {
     columns: readonly string[];
 }
 
+/**
+ * POST body `{ action: 'find', appId }`: the row whose name HYPERLINK links `appId`, or, when there
+ * is none, the tag rules a new row for it is built with (`FindResponse`).
+ */
+export interface FindRequest {
+    action: 'find';
+    appId: number;
+}
+
+/**
+ * The 標籤規則 worksheet's cells as displayed, header row first; `null` when the sheet has no
+ * such worksheet. game-record-writer's `parseTagRules` reads it.
+ */
+export type TagRuleCells = string[][] | null;
+
+/** Response of the `find` action: the 1-based sheet row, or the tag rules without one. */
+export type FindResponse = { row: number } | { row: null; tagRules: TagRuleCells };
+
 /** POST body `{ action: 'dump' }`: the whole-sheet dump (`SheetDump`). */
 export interface DumpRequest {
     action: 'dump';
@@ -116,7 +134,7 @@ export interface WriteResponse {
 }
 
 /** Every request is a POST of one of these, with the token added (`SheetApiRequestBody`). */
-export type SheetApiRequest = DumpRequest | RowRequest | WriteRequest;
+export type SheetApiRequest = DumpRequest | FindRequest | RowRequest | WriteRequest;
 
 /**
  * The JSON body of every request. The token rides in the body, never in the URL, so it stays
@@ -177,8 +195,8 @@ export interface SheetApi {
      * Rejects with code `not-found` when its name links no app.
      */
     readRowByNumber(row: number, columns: readonly string[]): Promise<NumberedRowResponse>;
-    /** @returns The row with `appId`, or null. */
-    findRow(appId: number): Promise<number | null>;
+    /** The row with `appId`; without one, the tag rules a new row for it is built with. */
+    findRow(appId: number): Promise<FindResponse>;
     /** Write only the given cells of the row with `appId`. */
     updateRow(appId: number, values: RowValues): Promise<WriteResponse>;
     /**
@@ -219,16 +237,7 @@ export function createSheetApi({ webAppUrl, token, postText }: SheetApiOptions):
         readRow: (appId, columns) => send<RowResponse>({ action: 'row', appId, columns }),
         readRowByNumber: (row, columns) => send<NumberedRowResponse>({ action: 'row', row, columns }),
 
-        async findRow(appId) {
-            try {
-                return (await api.readRow(appId, [])).row;
-            } catch (error) {
-                if (error instanceof SheetApiError && error.code === 'not-found') {
-                    return null;
-                }
-                throw error;
-            }
-        },
+        findRow: appId => send<FindResponse>({ action: 'find', appId }),
 
         updateRow: (appId, values) => send<WriteResponse>({ action: 'update', appId, values }),
         updateRowByNumber: (row, appId, values) => send<WriteResponse>({ action: 'update', appId, values, row }),

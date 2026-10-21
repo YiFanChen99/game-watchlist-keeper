@@ -1,6 +1,6 @@
 import type { StorePageInfo } from '@watchlist/steam-info-scraper';
 
-import { Column } from './columns';
+import { Column, todoPlaceholder } from './columns';
 
 /**
  * The worksheet the tag rules are kept in, edited by hand: one rule per row under a header row,
@@ -139,4 +139,18 @@ export function matchTagRules(rules: readonly TagRule[], page: Pick<StorePageInf
         }
     }
     return match;
+}
+
+/**
+ * The lines a userscript shows after adding a row: what the tag rules wrote, then what is wrong
+ * with the worksheet.
+ *
+ * @returns e.g. `模式：多人 動作；遊戲特點：TODO` and `「標籤規則」第 5 列沒有輸出，略過。`
+ */
+export function formatTagRuleNotes(match: TagMatch, problems: readonly string[]): string[] {
+    const written = (outputs: readonly string[]) => (outputs.length > 0 ? outputs.join(' ') : todoPlaceholder);
+    return [
+        `${Column.mode}：${written(match[Column.mode])}；遊戲特點：${written(match[Column.detail])}`,
+        ...problems.map(problem => `${problem}。`),
+    ];
 }

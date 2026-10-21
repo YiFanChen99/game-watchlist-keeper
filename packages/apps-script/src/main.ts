@@ -3,11 +3,13 @@
  * because Apps Script only finds top-level function declarations.
  */
 import { extractAppId } from '@watchlist/core';
-import { Column } from '@watchlist/game-record-writer';
+import { Column, tagRulesWorksheetName } from '@watchlist/game-record-writer';
 import {
+    type FindResponse,
     type NumberedRowResponse,
     type RowResponse,
     type SheetApiErrorBody,
+    type TagRuleCells,
     type WriteRequest,
     type WriteResponse,
 } from '@watchlist/sheet-api';
@@ -54,6 +56,9 @@ const dumpCache = () => gzipCache('dump:v2');
 
 /** `AppIdIndex` of the name column, so a lookup need not read every name. */
 const appIdIndexCache = () => gzipCache('appIds:v1');
+
+/** The 標籤規則 worksheet's cells (`TagRuleCells`). */
+const tagRulesCache = () => gzipCache('tagRules:v1');
 
 /** Fails closed: an unset token property rejects every request. */
 export function isAuthorized(provided: unknown, expected: string | null): boolean {
@@ -219,8 +224,27 @@ function readRow(request: RequestBody): RowResponse | NumberedRowResponse {
         return { ...readCells(context, row, names), appId };
     }
     const row = requireRow(context, parseAppId(request.appId));
-    // Only finding the row (`findRow`): skip the extra reads.
+    // Only finding the row (userscripts from before `find`): skip the extra reads.
     return names.length ? readCells(context, row, names) : { row, values: {} };
+}
+
+function readTagRules(): TagRuleCells {
+    const cache = tagRulesCache();
+    const cached = cache.get();
+    if (cached !== null) {
+        return JSON.parse(cached) as TagRuleCells;
+    }
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(tagRulesWorksheetName);
+    const cells = sheet ? sheet.getDataRange().getDisplayValues() : null;
+    cache.put(JSON.stringify(cells));
+    return cells;
+}
+
+/** A `FindRequest`: the tag rules come along only without a row, since only a new row uses them. */
+function find(request: RequestBody): FindResponse {
+    const appId = parseAppId(request.appId);
+    const row = findRow(openSheet(), appId);
+    return row === null ? { row, tagRules: readTagRules() } : { row };
 }
 
 function applyWrites(sheet: GoogleAppsScript.Spreadsheet.Sheet, row: number, writes: readonly CellWrite[]): void {
@@ -340,6 +364,8 @@ export function doPost(e: GoogleAppsScript.Events.DoPost): GoogleAppsScript.Cont
         switch (body.action) {
             case 'dump':
                 return jsonOutput(readDump());
+            case 'find':
+                return jsonOutput(JSON.stringify(find(body)));
             case 'row':
                 return jsonOutput(JSON.stringify(readRow(body)));
             case 'update':
@@ -356,9 +382,13 @@ export function doPost(e: GoogleAppsScript.Events.DoPost): GoogleAppsScript.Cont
 function invalidateCaches(): void {
     dumpCache().invalidate();
     appIdIndexCache().invalidate();
+    tagRulesCache().invalidate();
 }
 
-/** Simple trigger: any hand edit may change the dump and the index. Edits made by scripts do not fire it. */
+/**
+ * Simple trigger: any hand edit may change the dump, the index and the tag rules; it fires for
+ * every worksheet. Edits made by scripts do not fire it.
+ */
 export function onEdit(): void {
     invalidateCaches();
 }

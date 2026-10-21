@@ -4,10 +4,13 @@ import {
     fetchPlaytime,
     formatChange,
     formatLowestOffNotes,
+    formatTagRuleNotes,
     MissingValueError,
+    parseTagRules,
     refreshGame,
     sheetApiRowStore,
     type LowestOffOutcome,
+    type TagRules,
 } from '@watchlist/game-record-writer';
 import { SheetApiError } from '@watchlist/sheet-api';
 import { readSteamDbPrices, type SteamDbPrices } from '@watchlist/steam-info-scraper';
@@ -60,9 +63,13 @@ export function startSheetWriter(): void {
         }
     }
 
+    /** The rules ＋ 新增 fills 模式 and 備註 with; the check brings them when the sheet lacks the game. */
+    let tagRules: TagRules | null = null;
+
     async function check(): Promise<void> {
-        const row = await withApi(api => api.findRow(appId!));
-        action = row === null ? 'add' : 'update';
+        const found = await withApi(api => api.findRow(appId!));
+        tagRules = found.row === null ? parseTagRules(found.tagRules) : null;
+        action = found.row === null ? 'add' : 'update';
         panel.setState({ kind: action });
     }
 
@@ -89,8 +96,17 @@ export function startSheetWriter(): void {
         panel.setState({ kind: 'busy', label: '新增中…' });
         let notes: string[];
         try {
-            const outcome = await withApi(api => addGame(appId!, { fetchText, store: sheetApiRowStore(api), ...sources, openStorePage: document }));
-            notes = lowestOffNotes('add', sources, outcome);
+            const outcome = await withApi(api => addGame(appId!, {
+                fetchText,
+                store: sheetApiRowStore(api),
+                ...sources,
+                openStorePage: document,
+                tagRules: tagRules?.rules ?? [],
+            }));
+            notes = [
+                ...formatTagRuleNotes(outcome.tagMatch, tagRules?.problems ?? []),
+                ...lowestOffNotes('add', sources, outcome),
+            ];
         } catch (error) {
             if (error instanceof MissingValueError) {
                 // Retrying will not help; the page lacks the value. Keep it shown: nothing was added.
@@ -120,8 +136,11 @@ export function startSheetWriter(): void {
             if (!isSheetError(error, 'not-found')) {
                 throw error;
             }
-            action = 'add';
-            panel.setState({ kind: 'add' }, 'Sheet 找不到這個遊戲了，可以重新新增。');
+            // Check again for the tag rules, which only come without a row.
+            await check();
+            if (action === 'add') {
+                panel.setState({ kind: 'add' }, 'Sheet 找不到這個遊戲了，可以重新新增。');
+            }
         }
     }
 
