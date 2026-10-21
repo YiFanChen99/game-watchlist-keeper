@@ -23,6 +23,8 @@ const page: StorePageInfo = {
     hasDemo: false,
     interfaceLanguages: ['簡體中文', '英文'],
     tags: [],
+    categories: [],
+    genres: [],
     isDelisted: false,
 };
 const playtime: PlaytimeStats = { medianHours: 125, percentRankHours: 725 };

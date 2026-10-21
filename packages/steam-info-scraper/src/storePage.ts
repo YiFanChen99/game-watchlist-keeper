@@ -15,8 +15,15 @@ export interface StorePageInfo {
      * `null` when the page has no language table.
      */
     interfaceLanguages: string[] | null;
-    /** User-defined tags, most popular first. */
+    /** User-defined tags (使用者為此產品所選用的熱門標籤), most popular first. */
     tags: string[];
+    /**
+     * Categories the developer ticks (單人, Steam 成就, 線上合作, …), in page order; not the
+     * 「Steam 正在了解這款遊戲」 notice an unreleased game shows among them.
+     */
+    categories: string[];
+    /** Genres (類型) the developer picks, in page order. */
+    genres: string[];
     /**
      * The page says the game is no longer sold on Steam (「…已不再於 Steam 商店中提供。」). Such a
      * page has no purchase area: no price, and no demo either.
@@ -87,10 +94,11 @@ function isDelisted(doc: ParentNode): boolean {
     return textOf(doc.querySelector('#purchase_note'))?.includes('不再於 Steam 商店中提供') ?? false;
 }
 
-function parseTags(doc: ParentNode): string[] {
-    const tags = Array.from(doc.querySelectorAll('.popular_tags a.app_tag'), textOf)
-        .filter((tag): tag is string => tag !== null);
-    return [...new Set(tags)];
+/** The text of each element `selector` matches, without blanks or repeats. */
+function textsOf(doc: ParentNode, selector: string): string[] {
+    const texts = Array.from(doc.querySelectorAll(selector), textOf)
+        .filter((text): text is string => text !== null);
+    return [...new Set(texts)];
 }
 
 /**
@@ -122,7 +130,9 @@ export function parseStorePage(doc: ParentNode): StorePageInfo {
         isEarlyAccess: doc.querySelector('.early_access_header') !== null,
         hasDemo: doc.querySelector('.demo_above_purchase, #demoGameBtn') !== null,
         interfaceLanguages: parseInterfaceLanguages(doc),
-        tags: parseTags(doc),
+        tags: textsOf(doc, '.popular_tags a.app_tag'),
+        categories: textsOf(doc, '#category_block a.game_area_details_specs_ctn .label'),
+        genres: textsOf(doc, '#genresAndManufacturer a[href*="/genre/"]'),
         isDelisted: isDelisted(doc),
     };
 }

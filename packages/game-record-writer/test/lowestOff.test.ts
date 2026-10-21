@@ -15,6 +15,8 @@ const page: StorePageInfo = {
     hasDemo: false,
     interfaceLanguages: [],
     tags: [],
+    categories: [],
+    genres: [],
     isDelisted: false,
 };
 

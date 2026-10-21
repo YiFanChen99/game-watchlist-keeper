@@ -13,6 +13,8 @@ interface Expected {
     supports: string[];
     lacks: string[];
     firstTags: string[];
+    categories: string[];
+    genres: string[];
 }
 
 const cases: Record<number, Expected> = {
@@ -25,6 +27,8 @@ const cases: Record<number, Expected> = {
         supports: ['簡體中文', '英文'],
         lacks: ['繁體中文'],
         firstTags: ['動作類 Rogue', '輕度 Rogue'],
+        categories: ['單人', 'Steam 成就', 'Steam 交換卡片', '有字幕', 'Steam 雲端', '在手機上遠端暢玩', '在平板上遠端暢玩', '在電視上遠端暢玩', '親友同享'],
+        genres: ['動作', '獨立製作', '角色扮演'],
     },
     1562430: {
         name: 'DREDGE',
@@ -36,6 +40,8 @@ const cases: Record<number, Expected> = {
         supports: ['繁體中文'],
         lacks: [],
         firstTags: ['探索', '釣魚'],
+        categories: ['單人', 'Steam 成就', 'Steam 交換卡片', 'Steam 雲端', '親友同享'],
+        genres: ['冒險', '角色扮演'],
     },
     2868840: {
         name: 'Slay the Spire 2',
@@ -46,6 +52,8 @@ const cases: Record<number, Expected> = {
         supports: ['簡體中文'],
         lacks: ['繁體中文'],
         firstTags: ['類 Rogue', '卡牌遊戲'],
+        categories: ['單人', '線上合作', 'Steam 雲端', '統計', 'Steam 排行榜', '親友同享'],
+        genres: ['獨立製作', '策略', '搶先體驗'],
     },
     1966720: {
         name: 'Lethal Company',
@@ -56,6 +64,8 @@ const cases: Record<number, Expected> = {
         supports: ['英文'],
         lacks: ['繁體中文', '簡體中文'],
         firstTags: ['線上合作', '恐怖'],
+        categories: ['單人', '線上合作', '親友同享'],
+        genres: ['動作', '冒險', '獨立製作', '搶先體驗'],
     },
     3669620: {
         name: 'Warhammer Survivors',
@@ -66,6 +76,8 @@ const cases: Record<number, Expected> = {
         supports: ['簡體中文'],
         lacks: ['繁體中文'],
         firstTags: ['動作', '逆彈幕'],
+        categories: ['單人', 'Steam 成就', 'Steam 雲端', '親友同享'],
+        genres: ['動作', '休閒', '獨立製作', '角色扮演'],
     },
     570: {
         name: 'Dota 2',
@@ -76,6 +88,8 @@ const cases: Record<number, Expected> = {
         supports: ['繁體中文'],
         lacks: [],
         firstTags: ['免費遊玩', '多人線上戰術競技'],
+        categories: ['合作', 'Steam 交換卡片', 'Steam 工作坊', 'SteamVR 收藏品', '應用程式內購買', 'Steam 時間軸'],
+        genres: ['動作', '策略', '免費遊玩'],
     },
     900270: {
         name: 'Reventure',
@@ -86,6 +100,8 @@ const cases: Record<number, Expected> = {
         supports: ['簡體中文', '英文'],
         lacks: ['繁體中文'],
         firstTags: ['冒險', '獨立'],
+        categories: ['單人', 'Steam 成就', 'Steam 交換卡片', 'Steam 雲端', '親友同享'],
+        genres: ['冒險', '獨立製作'],
     },
 };
 
@@ -114,6 +130,8 @@ describe('parseStorePage', () => {
             hasDemo: false,
             interfaceLanguages: null,
             tags: [],
+            categories: [],
+            genres: [],
             isDelisted: false,
         });
     });

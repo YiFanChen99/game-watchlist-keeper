@@ -22,6 +22,8 @@ describe('planNewRow', () => {
             hasDemo: false,
             interfaceLanguages: ['簡體中文'],
             tags: [],
+            categories: [],
+            genres: [],
             isDelisted: false,
         },
         reviews: { totalPositive: 61, totalReviews: 100, playtimeMinutes: playtimeSample },
