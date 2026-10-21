@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
-import { Column, formatTagRuleNotes, matchTagRules, parseTagRules } from '../src';
+import { Column, matchTagRules, parseTagRules } from '../src';
 
-/** The 標籤規則 worksheet as the web app sends it: column A blank, like the user's. */
+/** The tag rules worksheet as the web app sends it: column A blank, like the user's. */
 const header = ['', '輸出', '目標欄', 'User Tags', 'Categories', 'Genres'];
 
 /** Chained Beasts (3569420), trimmed. */
@@ -51,9 +51,9 @@ describe('parseTagRules', () => {
 
         expect(rules.map(rule => rule.output)).toEqual(['多人']);
         expect(problems).toEqual([
-            '「標籤規則」第 4 列的目標欄「特」不是「模式」或「備註」，略過',
-            '「標籤規則」第 5 列沒有輸出，略過',
-            '「標籤規則」第 6 列沒有關鍵字，略過',
+            '標籤規則第 4 列的目標欄「特」不是「模式」或「備註」，略過。',
+            '標籤規則第 5 列沒有輸出，略過。',
+            '標籤規則第 6 列沒有關鍵字，略過。',
         ]);
     });
 
@@ -66,17 +66,17 @@ describe('parseTagRules', () => {
         ]);
 
         expect(rules).toHaveLength(3);
-        expect(problems).toEqual(['「標籤規則」第 4 列：模式的「動作」不只一列，順序看先對到的那列，建議合併成一列']);
+        expect(problems).toEqual(['標籤規則第 4 列：模式的「動作」不只一列，順序看先對到的那列，建議合併成一列。']);
     });
 
     it('reports a missing worksheet or header, with no rules', () => {
-        expect(parseTagRules(null)).toEqual({ rules: [], problems: ['Sheet 沒有「標籤規則」分頁'] });
+        expect(parseTagRules(null)).toEqual({ rules: [], problems: ['Sheet 沒有標籤規則的分頁（gid 143895865），模式和遊戲特點寫 TODO。'] });
         expect(parseTagRules([])).toEqual({
             rules: [],
-            problems: ['「標籤規則」分頁沒有「輸出」「目標欄」「User Tags」「Categories」「Genres」欄'],
+            problems: ['標籤規則分頁沒有「輸出」「目標欄」「User Tags」「Categories」「Genres」欄，模式和遊戲特點寫 TODO。'],
         });
         expect(parseTagRules([['輸出', '目標欄', 'User Tags', 'Genres']]).problems)
-            .toEqual(['「標籤規則」分頁沒有「Categories」欄']);
+            .toEqual(['標籤規則分頁沒有「Categories」欄，模式和遊戲特點寫 TODO。']);
     });
 });
 
@@ -112,12 +112,5 @@ describe('matchTagRules', () => {
         expect(only('', '', '動作')).toEqual(['x']);
         expect(only('', '分割螢幕', '')).toEqual(['x']);
         expect(only('', '本地合作', '')).toEqual([]);
-    });
-});
-
-describe('formatTagRuleNotes', () => {
-    it('tells what the rules wrote, TODO where they wrote nothing, then each problem', () => {
-        expect(formatTagRuleNotes({ [Column.mode]: ['多人', '動作'], [Column.detail]: [] }, ['Sheet 沒有「標籤規則」分頁']))
-            .toEqual(['模式：多人 動作；遊戲特點：TODO', 'Sheet 沒有「標籤規則」分頁。']);
     });
 });

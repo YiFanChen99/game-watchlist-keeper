@@ -15,7 +15,7 @@ import { defaultLowestOff, planLowestOff } from './lowestOff';
 import { computePlaytimeStats } from './playtime';
 import { planNewRow } from './newRow';
 import { planRefresh, refreshReadColumns, type RefreshPlan } from './refresh';
-import { matchTagRules, type TagMatch, type TagRule } from './tagRules';
+import { matchTagRules, type TagRule } from './tagRules';
 
 /**
  * Where refreshed rows are read from and written to, keyed by Steam app id.
@@ -165,14 +165,12 @@ export interface AddDeps extends RefreshDeps {
 export interface AddResult extends LowestOffOutcome {
     /** The written cells. */
     row: SheetRowValues;
-    /** What the tag rules gave the game. */
-    tagMatch: TagMatch;
 }
 
 /**
  * Add a row for a game the sheet does not have yet; see `planNewRow`.
  *
- * @returns The written cells, what the tag rules gave, ITAD's answer, and why 最低off has `!`.
+ * @returns The written cells, ITAD's answer, and why 最低off has `!`.
  */
 export async function addGame(appId: number, deps: AddDeps): Promise<AddResult> {
     const [snapshot, itad] = await Promise.all([
@@ -184,7 +182,7 @@ export async function addGame(appId: number, deps: AddDeps): Promise<AddResult> 
     const tagMatch = matchTagRules(deps.tagRules ?? [], snapshot.page);
     const row = planNewRow({ appId, snapshot, lowestOff: lowestOff.cell, today, tagMatch });
     await deps.store.append(appId, row);
-    return { row, tagMatch, ...itad, lowestOffDoubts: lowestOff.doubts };
+    return { row, ...itad, lowestOffDoubts: lowestOff.doubts };
 }
 
 /**

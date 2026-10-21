@@ -40,7 +40,7 @@ const oldRow: SheetRowValues = {
     [Column.detail]: '手寫的遊戲特點。中位1H，3rd.高2H。',
 };
 
-/** The user's sample 標籤規則 worksheet (2026-10-21), with `Rouge` spelled `Rogue`. */
+/** The user's sample tag rules worksheet (2026-10-21), with `Rouge` spelled `Rogue`. */
 const { rules: tagRules } = parseTagRules([
     ['', '輸出', '目標欄', 'User Tags', 'Categories', 'Genres'],
     ['', '多人', '模式', '合作、多人、玩家合作', '線上合作、分割螢幕、多人連線', ''],
@@ -102,7 +102,7 @@ it('documents what each button sends for every fixture game', async () => {
         '',
         `- 今天：${today.getFullYear()}/${today.getMonth() + 1}/${today.getDate()}；沒有 SteamDB 區塊（跟 SteamGifts、Sheet 上的 ↻ 一樣），最低off 只看 ITAD。`,
         '- `—`：送出欄裡表示不送、Sheet 上保持原樣（新增時就是空白）；「更新前」欄裡表示這個例子沒有設定舊值。公式欄由 server 從上一列複製，不在表內。',
-        '- 模式與備註開頭的遊戲特點用使用者 2026-10-21 的範例「標籤規則」（`多人`、`動作`、`砍殺`、`RL` 寫模式，`俯視角` 寫備註），見 `test/payloads.test.ts`。',
+        '- 模式與備註開頭的遊戲特點用使用者 2026-10-21 的範例標籤規則（`多人`、`動作`、`砍殺`、`RL` 寫模式，`俯視角` 寫備註），見 `test/payloads.test.ts`。',
         '- 遊戲資料來自 `packages/steam-info-scraper/test/fixtures`（Steam 2026-10-17 抓取，Reventure 與 ITAD 2026-10-20）。',
         '',
         ...sections.flatMap(section => [section, '']),

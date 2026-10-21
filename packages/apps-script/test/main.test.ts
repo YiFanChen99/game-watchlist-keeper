@@ -121,10 +121,12 @@ describe('find', () => {
                 getFormulas: () => [['=HYPERLINK("https://store.steampowered.com/app/570/","Dota 2")']],
             }),
         };
-        const tagRuleSheet = { getDataRange: () => ({ getDisplayValues: readTagRuleSheet }) };
+        const tagRuleSheet = { getSheetId: () => 143895865, getDataRange: () => ({ getDisplayValues: readTagRuleSheet }) };
+        const otherSheet = { getSheetId: () => 7 };
         vi.stubGlobal('SpreadsheetApp', {
             getActiveSpreadsheet: () => ({
-                getSheetByName: (name: string) => (name === 'STEAM' ? steam : name === '標籤規則' && hasTagRuleSheet ? tagRuleSheet : null),
+                getSheetByName: (name: string) => (name === 'STEAM' ? steam : null),
+                getSheets: () => [otherSheet, ...hasTagRuleSheet ? [tagRuleSheet] : []],
             }),
         });
         readTagRuleSheet.mockClear();

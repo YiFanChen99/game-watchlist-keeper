@@ -3,7 +3,7 @@
  * because Apps Script only finds top-level function declarations.
  */
 import { extractAppId } from '@watchlist/core';
-import { Column, tagRulesWorksheetName } from '@watchlist/game-record-writer';
+import { Column, tagRulesWorksheetId } from '@watchlist/game-record-writer';
 import {
     type FindResponse,
     type NumberedRowResponse,
@@ -57,7 +57,7 @@ const dumpCache = () => gzipCache('dump:v2');
 /** `AppIdIndex` of the name column, so a lookup need not read every name. */
 const appIdIndexCache = () => gzipCache('appIds:v1');
 
-/** The 標籤規則 worksheet's cells (`TagRuleCells`). */
+/** The tag rules worksheet's cells (`TagRuleCells`). */
 const tagRulesCache = () => gzipCache('tagRules:v1');
 
 /** Fails closed: an unset token property rejects every request. */
@@ -234,7 +234,7 @@ function readTagRules(): TagRuleCells {
     if (cached !== null) {
         return JSON.parse(cached) as TagRuleCells;
     }
-    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(tagRulesWorksheetName);
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheets().find(each => each.getSheetId() === tagRulesWorksheetId);
     const cells = sheet ? sheet.getDataRange().getDisplayValues() : null;
     cache.put(JSON.stringify(cells));
     return cells;

@@ -9,7 +9,7 @@ Sheet 的 Web App（server 端），負責查詢與寫入遊戲追蹤 Sheet，�
 - `doGet`：一律回 `invalid`（訊息請使用者更新 userscript）。保留它是讓 GET 拿到正常的錯誤，而不是 Apps Script 找不到函式的頁面；不回 `unauthorized`，是因為改成 POST 之前的舊版 userscript 收到 `unauthorized` 會刪掉存好的 token。
 - `doPost`：依 `action` 分派：
   - `dump`：`STEAM` 工作表的整表傾印（`{ games, labelMap }`）。每個遊戲帶上名稱 HYPERLINK 連到的 `appId`（名稱不是 HYPERLINK 時省略）；列的轉換規則是 `@watchlist/sheet-api` 的 `toDumpRow`，讓 client 讀單列時套用同一套規則。
-  - `find` + `appId`：名稱欄連到這個 AppID 的那一列，回 `{ row }`；沒有這一列時回 `{ row: null, tagRules }`，`tagRules` 是「標籤規則」分頁的顯示值（第 1 列是標題），沒有這個分頁時是 `null`。規則只在新增時用到，所以有這一列時不讀。給 `userscript-steam` 開頁時判斷要新增還是更新，規則的格式由 `@watchlist/game-record-writer` 的 `parseTagRules` 解讀（見它的 COLUMNS.md「標籤規則」），server 不檢查。
+  - `find` + `appId`：名稱欄連到這個 AppID 的那一列，回 `{ row }`；沒有這一列時回 `{ row: null, tagRules }`，`tagRules` 是標籤規則分頁的顯示值（第 1 列是標題），沒有這個分頁時是 `null`。分頁用固定的 gid 找（`@watchlist/game-record-writer` 的 `tagRulesWorksheetId`，`143895865`），不看名稱。規則只在新增時用到，所以有這一列時不讀。給 `userscript-steam` 開頁時判斷要新增還是更新，規則的格式由 `@watchlist/game-record-writer` 的 `parseTagRules` 解讀（見它的 COLUMNS.md「標籤規則」），server 不檢查。
   - `row` + `appId` + `columns`（欄名陣列）：名稱欄連到這個 AppID 的那一列，回 `{ row, values, url }`。日期格式是 `YYYY/M/D`；`url` 開啟 Sheet 並選取整列（`#gid=<工作表>&range=<列>:<列>`）。`columns` 是空的時只回 `{ row, values: {} }`（只找列號，不多讀格子；`find` 之前的 userscript 用這個）。
   - `row` + `row`（列號）+ `columns`：用列號讀那一列，回 `{ row, appId, values, url }`，`appId` 取自它名稱欄的 HYPERLINK。給只知道列號的 client（`userscript-sheet`）用。只讀那一列的格子，不用 AppID 索引。名稱不是 HYPERLINK 時回 `not-found`。
   - `update` + `appId` + `values`：只寫指定的欄位。名稱、公式欄（例如 最低$）不能寫，目前含公式的格子也不能寫。
@@ -21,7 +21,7 @@ Sheet 的 Web App（server 端），負責查詢與寫入遊戲追蹤 Sheet，�
 - 三份快取都 gzip 後分塊存在 CacheService，最長 6 小時：
   - **整表傾印**（`dump:v2`）：寫入後清掉。重建時讀的名稱欄公式也拿來順便重建 AppID 索引快取。
   - **AppID → 列號索引**：讓單列查詢不必每次讀整個名稱欄。用到快取裡的列號前，會先讀那一格的公式確認還是同一個 AppID，不符就重新掃描，所以快取過期也不會讀錯或寫錯列。`append` 一律重新掃描來防重複，寫完把第 4 列起的列號加 1，再把新列加進索引。
-  - **標籤規則**（`tagRules:v1`）：「標籤規則」分頁的顯示值（沒有分頁時也記下 `null`）。
+  - **標籤規則**（`tagRules:v1`）：標籤規則分頁的顯示值（沒有分頁時也記下 `null`）。
   - 手動編輯 Sheet（任何分頁）時由 `onEdit` 三份都清掉；插入、刪除、排序整列不會觸發 `onEdit`，由 `onChange` 清掉（要手動設定觸發條件，見下方）。
 - `WantToOwned`：Sheet 自訂函式，沿用原專案。
 

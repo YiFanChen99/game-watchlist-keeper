@@ -34,11 +34,10 @@ export {
 } from './refresh';
 export { buildNameFormula, MissingValueError, planNewRow, unratedWantLevel, type NewRowInput } from './newRow';
 export {
-    formatTagRuleNotes,
     matchTagRules,
     parseTagRules,
     TagRuleColumn,
-    tagRulesWorksheetName,
+    tagRulesWorksheetId,
     type TagMatch,
     type TagRule,
     type TagRules,

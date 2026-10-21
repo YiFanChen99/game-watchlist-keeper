@@ -84,8 +84,8 @@ export interface FindRequest {
 }
 
 /**
- * The 標籤規則 worksheet's cells as displayed, header row first; `null` when the sheet has no
- * such worksheet. game-record-writer's `parseTagRules` reads it.
+ * The tag rules worksheet's cells as displayed, header row first; `null` when the sheet has no
+ * such worksheet (game-record-writer's `tagRulesWorksheetId`). `parseTagRules` reads it.
  */
 export type TagRuleCells = string[][] | null;
 

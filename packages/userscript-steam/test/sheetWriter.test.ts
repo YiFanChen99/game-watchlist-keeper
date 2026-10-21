@@ -382,7 +382,7 @@ describe('add', () => {
             [Column.wantLevel]: '?',
         }));
         expect(sheetButton().textContent).toBe('↻ 更新');
-        expect(status()).toBe('已新增。\n模式：多人；遊戲特點：TODO\n沒有 ITAD 的 API key，也沒有 SteamDB 區塊，最低off 寫 0。');
+        expect(status()).toBe('已新增。\n沒有 ITAD 的 API key，也沒有 SteamDB 區塊，最低off 寫 0。');
         vi.advanceTimersByTime(messageLifetimeMs);
         expect(status()).toBeNull();
     });
@@ -395,7 +395,7 @@ describe('add', () => {
         await settle();
 
         expect(api.appendRow).toHaveBeenCalledWith(appId, expect.objectContaining({ [Column.lowestOff]: '!30' }));
-        expect(status()).toBe('已新增。\n模式：多人；遊戲特點：TODO\n沒有 ITAD 的 API key，最低off 只看 SteamDB 區塊，前面加上 !。');
+        expect(status()).toBe('已新增。\n沒有 ITAD 的 API key，最低off 只看 SteamDB 區塊，前面加上 !。');
     });
 
     it('takes 最低off from ITAD with the saved key, without a note', async () => {
@@ -406,7 +406,7 @@ describe('add', () => {
         await settle();
 
         expect(api.appendRow).toHaveBeenCalledWith(appId, expect.objectContaining({ [Column.lowestOff]: 0 }));
-        expect(status()).toBe('已新增。\n模式：多人；遊戲特點：TODO');
+        expect(status()).toBe('已新增。');
     });
 
     it('fills 模式 and 備註 from the tag rules the check brought', async () => {
@@ -429,7 +429,7 @@ describe('add', () => {
         const sent = api.appendRow.mock.calls[0]![1];
         expect(sent[Column.mode]).toBe('RL 多人');
         expect(sent[Column.detail]).toMatch(/^卡牌。26\/03EA。/);
-        expect(status()).toBe('已新增。\n模式：RL 多人；遊戲特點：卡牌');
+        expect(status()).toBe('已新增。');
     });
 
     it('adds with TODO and says what is wrong with the tag rules', async () => {
@@ -441,7 +441,7 @@ describe('add', () => {
         await settle();
 
         expect(api.appendRow).toHaveBeenCalledWith(appId, expect.objectContaining({ [Column.mode]: 'TODO' }));
-        expect(status()).toBe('已新增。\n模式：TODO；遊戲特點：TODO\nSheet 沒有「標籤規則」分頁。');
+        expect(status()).toBe('已新增。\nSheet 沒有標籤規則的分頁（gid 143895865），模式和遊戲特點寫 TODO。');
     });
 
     it('updates on the next click once added', async () => {

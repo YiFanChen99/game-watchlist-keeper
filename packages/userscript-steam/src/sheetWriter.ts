@@ -4,7 +4,6 @@ import {
     fetchPlaytime,
     formatChange,
     formatLowestOffNotes,
-    formatTagRuleNotes,
     MissingValueError,
     parseTagRules,
     refreshGame,
@@ -103,10 +102,7 @@ export function startSheetWriter(): void {
                 openStorePage: document,
                 tagRules: tagRules?.rules ?? [],
             }));
-            notes = [
-                ...formatTagRuleNotes(outcome.tagMatch, tagRules?.problems ?? []),
-                ...lowestOffNotes('add', sources, outcome),
-            ];
+            notes = [...tagRules?.problems ?? [], ...lowestOffNotes('add', sources, outcome)];
         } catch (error) {
             if (error instanceof MissingValueError) {
                 // Retrying will not help; the page lacks the value. Keep it shown: nothing was added.

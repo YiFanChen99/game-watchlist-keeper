@@ -1,12 +1,12 @@
 import type { StorePageInfo } from '@watchlist/steam-info-scraper';
 
-import { Column, todoPlaceholder } from './columns';
+import { Column } from './columns';
 
 /**
- * The worksheet the tag rules are kept in, edited by hand: one rule per row under a header row,
- * so a rule changes without a new userscript version.
+ * The gid of the worksheet the tag rules are kept in, edited by hand: one rule per row under a
+ * header row, so a rule changes without a new userscript version. Found by id, not by name.
  */
-export const tagRulesWorksheetName = '標籤規則';
+export const tagRulesWorksheetId = 143895865;
 
 /** Header names of the tag rules worksheet. */
 export const TagRuleColumn = {
@@ -43,7 +43,7 @@ export interface TagRule {
 export interface TagRules {
     /** In worksheet order, which is the order outputs are written in. */
     rules: TagRule[];
-    /** What is wrong with the worksheet, for the user to fix; the rules still apply without the bad rows. */
+    /** What is wrong with the worksheet, one sentence each, for the user to fix; the rules still apply without the bad rows. */
     problems: string[];
 }
 
@@ -68,13 +68,13 @@ function splitKeywords(cell: string | undefined): string[] {
  */
 export function parseTagRules(cells: readonly (readonly string[])[] | null): TagRules {
     if (cells === null) {
-        return { rules: [], problems: [`Sheet 沒有「${tagRulesWorksheetName}」分頁`] };
+        return { rules: [], problems: [`Sheet 沒有標籤規則的分頁（gid ${tagRulesWorksheetId}），模式和遊戲特點寫 TODO。`] };
     }
     const [header = [], ...rows] = cells;
     const index = new Map(header.map((name, column) => [name.trim(), column]));
     const missing = Object.values(TagRuleColumn).filter(name => !index.has(name));
     if (missing.length > 0) {
-        return { rules: [], problems: [`「${tagRulesWorksheetName}」分頁沒有${missing.map(name => `「${name}」`).join('')}欄`] };
+        return { rules: [], problems: [`標籤規則分頁沒有${missing.map(name => `「${name}」`).join('')}欄，模式和遊戲特點寫 TODO。`] };
     }
     const cell = (row: readonly string[], name: string) => row[index.get(name)!]?.trim() ?? '';
 
@@ -86,7 +86,7 @@ export function parseTagRules(cells: readonly (readonly string[])[] | null): Tag
             return;
         }
         const row = offset + 2;
-        const where = `「${tagRulesWorksheetName}」第 ${row} 列`;
+        const where = `標籤規則第 ${row} 列`;
         const output = cell(cells, TagRuleColumn.output);
         const target = cell(cells, TagRuleColumn.target);
         const rule = {
@@ -98,20 +98,20 @@ export function parseTagRules(cells: readonly (readonly string[])[] | null): Tag
             genres: splitKeywords(cell(cells, TagRuleColumn.genres)),
         };
         if (!(targets as readonly string[]).includes(target)) {
-            problems.push(`${where}的目標欄「${target}」不是${targets.map(name => `「${name}」`).join('或')}，略過`);
+            problems.push(`${where}的目標欄「${target}」不是${targets.map(name => `「${name}」`).join('或')}，略過。`);
             return;
         }
         if (output === '') {
-            problems.push(`${where}沒有輸出，略過`);
+            problems.push(`${where}沒有輸出，略過。`);
             return;
         }
         if (rule.userTags.length + rule.categories.length + rule.genres.length === 0) {
-            problems.push(`${where}沒有關鍵字，略過`);
+            problems.push(`${where}沒有關鍵字，略過。`);
             return;
         }
         const key = `${target}\n${output}`;
         if (seen.has(key)) {
-            problems.push(`${where}：${target}的「${output}」不只一列，順序看先對到的那列，建議合併成一列`);
+            problems.push(`${where}：${target}的「${output}」不只一列，順序看先對到的那列，建議合併成一列。`);
         }
         seen.add(key);
         rules.push(rule);
@@ -139,18 +139,4 @@ export function matchTagRules(rules: readonly TagRule[], page: Pick<StorePageInf
         }
     }
     return match;
-}
-
-/**
- * The lines a userscript shows after adding a row: what the tag rules wrote, then what is wrong
- * with the worksheet.
- *
- * @returns e.g. `模式：多人 動作；遊戲特點：TODO` and `「標籤規則」第 5 列沒有輸出，略過。`
- */
-export function formatTagRuleNotes(match: TagMatch, problems: readonly string[]): string[] {
-    const written = (outputs: readonly string[]) => (outputs.length > 0 ? outputs.join(' ') : todoPlaceholder);
-    return [
-        `${Column.mode}：${written(match[Column.mode])}；遊戲特點：${written(match[Column.detail])}`,
-        ...problems.map(problem => `${problem}。`),
-    ];
 }

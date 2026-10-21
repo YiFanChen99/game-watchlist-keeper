@@ -4,7 +4,7 @@
 
 - 今天：2026/10/17；沒有 SteamDB 區塊（跟 SteamGifts、Sheet 上的 ↻ 一樣），最低off 只看 ITAD。
 - `—`：送出欄裡表示不送、Sheet 上保持原樣（新增時就是空白）；「更新前」欄裡表示這個例子沒有設定舊值。公式欄由 server 從上一列複製，不在表內。
-- 模式與備註開頭的遊戲特點用使用者 2026-10-21 的範例「標籤規則」（`多人`、`動作`、`砍殺`、`RL` 寫模式，`俯視角` 寫備註），見 `test/payloads.test.ts`。
+- 模式與備註開頭的遊戲特點用使用者 2026-10-21 的範例標籤規則（`多人`、`動作`、`砍殺`、`RL` 寫模式，`俯視角` 寫備註），見 `test/payloads.test.ts`。
 - 遊戲資料來自 `packages/steam-info-scraper/test/fixtures`（Steam 2026-10-17 抓取，Reventure 與 ITAD 2026-10-20）。
 
 ## 1145360 Hades：已發售、只支援簡中
