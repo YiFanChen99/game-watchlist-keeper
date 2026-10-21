@@ -2,7 +2,7 @@
 
 讓一份 Google Sheet 遊戲追蹤清單與 Steam、SteamGifts、ITAD 價格通知保持同步的工具集。
 
-pnpm workspace monorepo，每個 `packages/*` 都是獨立的 node module，以 `@watchlist/<name>` 互相引用，皆 `private`、不發佈。
+pnpm workspace monorepo，每個 `packages/*` 都是獨立的 node module，以 `@watchlist/<name>` 互相引用，皆 `private`、不發佈。設計取捨、否決過的方案與實測查到的事實見 [DESIGN.md](DESIGN.md)。
 
 ## Packages
 
