@@ -20,7 +20,15 @@ export const TagRuleColumn = {
     categories: 'Categories',
     /** Keywords, each equal to a whole genre. */
     genres: 'Genres',
+    /**
+     * Optional. Outputs of the same target column this rule takes out when it matches, whatever
+     * other rules matched them.
+     */
+    excludedOutputs: '排除輸出',
 } as const;
+
+/** Columns a worksheet may lack; their cells read as blank. */
+const optionalColumns: ReadonlySet<string> = new Set([TagRuleColumn.excludedOutputs]);
 
 /** Keywords in a cell are separated by `、`: Steam's tags hold spaces (`動作類 Rogue`) but no `、`. */
 const keywordSeparator = '、';
@@ -38,16 +46,20 @@ export interface TagRule {
     userTags: string[];
     categories: string[];
     genres: string[];
+    excludedOutputs: string[];
 }
 
 export interface TagRules {
     /** In worksheet order, which is the order outputs are written in. */
     rules: TagRule[];
-    /** What is wrong with the worksheet, one sentence each, for the user to fix; the rules still apply without the bad rows. */
+    /**
+     * What is wrong with the worksheet, one sentence each, for the user to fix; the rules still
+     * apply without the bad rows.
+     */
     problems: string[];
 }
 
-/** What the rules give one game: outputs in rule order, without repeats. */
+/** What the rules give one game: outputs in rule order, without repeats or excluded ones. */
 export interface TagMatch {
     [Column.mode]: string[];
     [Column.detail]: string[];
@@ -61,8 +73,9 @@ function splitKeywords(cell: string | undefined): string[] {
  * Read the tag rules worksheet as the web app sends it.
  *
  * The rules end at the first blank row, so notes can follow below it. A row with a target other
- * than 模式 / 備註, or without an output or keywords, is left out and reported. An output repeated in one target column is reported too:
- * its place in the order would depend on which row matched first.
+ * than 模式 / 備註, or without an output or keywords, is left out and reported. An output repeated
+ * in one target column is reported too: its place in the order would depend on which row matched
+ * first. So is an excluded output no rule of that target column writes, likely a typo.
  *
  * @param cells Displayed values, header row first; `null` when the sheet has no such worksheet.
  */
@@ -72,11 +85,14 @@ export function parseTagRules(cells: readonly (readonly string[])[] | null): Tag
     }
     const [header = [], ...rows] = cells;
     const index = new Map(header.map((name, column) => [name.trim(), column]));
-    const missing = Object.values(TagRuleColumn).filter(name => !index.has(name));
+    const missing = Object.values(TagRuleColumn).filter(name => !index.has(name) && !optionalColumns.has(name));
     if (missing.length > 0) {
         return { rules: [], problems: [`標籤規則分頁沒有${missing.map(name => `「${name}」`).join('')}欄，模式和遊戲特點寫 TODO。`] };
     }
-    const cell = (row: readonly string[], name: string) => row[index.get(name)!]?.trim() ?? '';
+    const cell = (row: readonly string[], name: string) => {
+        const column = index.get(name);
+        return column === undefined ? '' : row[column]?.trim() ?? '';
+    };
 
     const rules: TagRule[] = [];
     const problems: string[] = [];
@@ -94,6 +110,7 @@ export function parseTagRules(cells: readonly (readonly string[])[] | null): Tag
             userTags: splitKeywords(cell(cells, TagRuleColumn.userTags)),
             categories: splitKeywords(cell(cells, TagRuleColumn.categories)),
             genres: splitKeywords(cell(cells, TagRuleColumn.genres)),
+            excludedOutputs: splitKeywords(cell(cells, TagRuleColumn.excludedOutputs)),
         };
         if (!(targets as readonly string[]).includes(target)) {
             problems.push(`${where}的目標欄「${target}」不是${targets.map(name => `「${name}」`).join('或')}，略過。`);
@@ -114,6 +131,13 @@ export function parseTagRules(cells: readonly (readonly string[])[] | null): Tag
         seen.add(key);
         rules.push(rule);
     });
+    for (const rule of rules) {
+        for (const excluded of rule.excludedOutputs) {
+            if (!seen.has(`${rule.target}\n${excluded}`)) {
+                problems.push(`標籤規則第 ${rule.row} 列排除的「${excluded}」不是${rule.target}的任何輸出，不會有作用。`);
+            }
+        }
+    }
     return { rules, problems };
 }
 
@@ -127,14 +151,28 @@ function matches(rule: TagRule, page: Pick<StorePageInfo, 'tags' | 'categories' 
 /**
  * Each target column's outputs of the rules a store page matches, in rule order; an output
  * matched again is not repeated.
+ *
+ * Exclusions come last, so row order does not matter for them: an output any matching rule
+ * excludes is not written, however many rules matched it. Every matching rule's exclusions count,
+ * also one whose own output another rule excludes.
  */
 export function matchTagRules(rules: readonly TagRule[], page: Pick<StorePageInfo, 'tags' | 'categories' | 'genres'>): TagMatch {
     const match: TagMatch = { [Column.mode]: [], [Column.detail]: [] };
+    const excluded = { [Column.mode]: new Set<string>(), [Column.detail]: new Set<string>() };
     for (const rule of rules) {
+        if (!matches(rule, page)) {
+            continue;
+        }
         const outputs = match[rule.target];
-        if (!outputs.includes(rule.output) && matches(rule, page)) {
+        if (!outputs.includes(rule.output)) {
             outputs.push(rule.output);
         }
+        for (const output of rule.excludedOutputs) {
+            excluded[rule.target].add(output);
+        }
     }
-    return match;
+    return {
+        [Column.mode]: match[Column.mode].filter(output => !excluded[Column.mode].has(output)),
+        [Column.detail]: match[Column.detail].filter(output => !excluded[Column.detail].has(output)),
+    };
 }

@@ -27,6 +27,7 @@ describe('parseTagRules', () => {
             userTags: ['動作類 Rogue', '輕度 Rogue'],
             categories: [],
             genres: ['動作'],
+            excludedOutputs: [],
         }]);
     });
 
@@ -66,6 +67,21 @@ describe('parseTagRules', () => {
             '標籤規則第 3 列的目標欄「特」不是「模式」或「備註」，略過。',
             '標籤規則第 4 列沒有輸出，略過。',
             '標籤規則第 5 列沒有關鍵字，略過。',
+        ]);
+    });
+
+    it('reports an excluded output no rule of the target column writes', () => {
+        const { rules, problems } = parseTagRules([
+            [...header, '排除輸出'],
+            ['', '動作', '模式', '動作', '', '', ''],
+            ['', '俯視角', '備註', '俯視視角', '', '', ''],
+            ['', '回合', '模式', '回合制', '', '', '策咯、動作、俯視角'],
+        ]);
+
+        expect(rules[2]?.excludedOutputs).toEqual(['策咯', '動作', '俯視角']);
+        expect(problems).toEqual([
+            '標籤規則第 4 列排除的「策咯」不是模式的任何輸出，不會有作用。',
+            '標籤規則第 4 列排除的「俯視角」不是模式的任何輸出，不會有作用。',
         ]);
     });
 
@@ -124,5 +140,39 @@ describe('matchTagRules', () => {
         expect(only('', '', '動作')).toEqual(['x']);
         expect(only('', '分割螢幕', '')).toEqual(['x']);
         expect(only('', '本地合作', '')).toEqual([]);
+    });
+
+    describe('排除輸出', () => {
+        const withExclusions = (...rows: string[][]) => parseTagRules([
+            [...header, '排除輸出'],
+            ...rows.map(row => ['', ...row]),
+        ]).rules;
+        const action = ['動作', '模式', '動作', '', '動作', ''];
+        const hackAndSlash = ['砍殺', '模式', '砍殺', '', '', '動作'];
+
+        it('takes out an output a matching rule excludes, wherever either row is', () => {
+            expect(matchTagRules(withExclusions(action, hackAndSlash), page)[Column.mode]).toEqual(['砍殺']);
+            expect(matchTagRules(withExclusions(hackAndSlash, action), page)[Column.mode]).toEqual(['砍殺']);
+        });
+
+        it('wins over every rule that matched the output', () => {
+            const actionAgain = ['動作', '模式', '動作類 Rogue', '', '', ''];
+            expect(matchTagRules(withExclusions(action, actionAgain, hackAndSlash), page)[Column.mode]).toEqual(['砍殺']);
+        });
+
+        it('only counts for a rule that matched, and only in its own target column', () => {
+            const unmatched = ['解謎', '模式', '解謎', '', '', '動作'];
+            const feature = ['動作', '備註', '', '', '動作', ''];
+            expect(matchTagRules(withExclusions(action, unmatched, feature, hackAndSlash), page)).toEqual({
+                [Column.mode]: ['砍殺'],
+                [Column.detail]: ['動作'],
+            });
+            expect(matchTagRules(withExclusions(action, unmatched), page)[Column.mode]).toEqual(['動作']);
+        });
+
+        it('counts the exclusions of a rule whose own output is excluded', () => {
+            const multiplayer = ['多人', '模式', '多人', '', '', '砍殺'];
+            expect(matchTagRules(withExclusions(action, hackAndSlash, multiplayer), page)[Column.mode]).toEqual(['多人']);
+        });
     });
 });
