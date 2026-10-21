@@ -32,14 +32,14 @@ function formatEarlyAccessDate(releaseDate: ReleaseDate | null): string {
  * The detail cell of a new row (COLUMNS.md 備註): the game feature description, then the
  * added structure — `YY/MMEA。` for early access, then the playtime.
  *
- * The feature description has no rule yet, so it is `TODO。` for now.
- *
- * @returns e.g. `TODO。26/03EA。中位12H，PR84 30H。`
+ * @param features The feature description's words, from the tag rules (`matchTagRules`);
+ *   `TODO` without any.
+ * @returns e.g. `俯視角 砍殺。26/03EA。中位12H，PR84 30H。` or `TODO。中位12H，PR84 30H。`
  */
-export function buildDetail(page: StorePageInfo, playtime: PlaytimeStats): string {
-    const features = `${todoPlaceholder}。`;
+export function buildDetail(page: StorePageInfo, playtime: PlaytimeStats, features: readonly string[] = []): string {
+    const description = `${features.length > 0 ? features.join(' ') : todoPlaceholder}。`;
     const earlyAccess = page.isEarlyAccess ? `${formatEarlyAccessDate(page.releaseDate)}EA。` : '';
-    return `${features}${earlyAccess}${formatPlaytime(playtime)}`;
+    return `${description}${earlyAccess}${formatPlaytime(playtime)}`;
 }
 
 /**

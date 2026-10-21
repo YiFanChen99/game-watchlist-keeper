@@ -18,11 +18,11 @@ export const Column = {
     wantLevel: '購買/期待度1~5',
     /** Hand-kept; read only, for the owned mark (e.g. `已有`) the dump puts in place of the want level. */
     anyDeal: 'AnyDeal',
-    /** The user's own filter tag categories, derived from the store page (rules not defined yet). */
+    /** The user's own filter tag categories, space-separated, from the tag rules (`matchTagRules`). */
     mode: '模式',
     /** Space-separated tags: the language mark, `Demo`, and any hand-written ones. */
     special: '特',
-    /** `[<date>EA。]中位<n>H，PR84 <n>H。` plus any hand-written notes. */
+    /** `<features>。[<date>EA。]中位<n>H，PR84 <n>H。` plus any hand-written notes. */
     detail: '備註',
 } as const;
 
@@ -30,7 +30,7 @@ export type ColumnName = (typeof Column)[keyof typeof Column];
 
 export type CellValue = string | number;
 
-/** Written where COLUMNS.md requires a value whose rule is not defined yet (模式, 遊戲特點敘述). */
+/** Written to 模式 and 遊戲特點敘述 when no tag rule matched, for the user to fill in by hand. */
 export const todoPlaceholder = 'TODO';
 
 /** Some cells of one row, keyed by header name. */

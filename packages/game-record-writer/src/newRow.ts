@@ -3,6 +3,7 @@ import type { SteamSnapshot } from '@watchlist/steam-info-scraper';
 
 import { Column, todoPlaceholder, type CellValue, type SheetRowValues } from './columns';
 import { planRefresh, unknownPricePlaceholder } from './refresh';
+import type { TagMatch } from './tagRules';
 
 /** Written to the want level column of a new row: not rated yet. */
 export const unratedWantLevel = '?';
@@ -21,6 +22,8 @@ export interface NewRowInput {
     /** From `planLowestOff` without an old row; `null` leaves the cell blank. */
     lowestOff: CellValue | null;
     today: Date;
+    /** What the tag rules give the game (`matchTagRules`); absent without rules. */
+    tagMatch?: TagMatch;
 }
 
 /**
@@ -39,11 +42,12 @@ export class MissingValueError extends Error {
  *
  * Steam-owned cells and the lowest discount follow `planRefresh` with a blank old row.
  * On top of that: the name HYPERLINK, `unknownPricePlaceholder` when the page has no price,
- * `?` as the want level, and `todoPlaceholder` as the mode until it has a rule.
+ * `?` as the want level, and the tag rules' outputs as the mode and the start of 備註, separated
+ * by spaces; `todoPlaceholder` where no rule matched.
  *
  * @throws MissingValueError Without a name or release date: both 必有 and have no default.
  */
-export function planNewRow({ appId, snapshot, lowestOff, today }: NewRowInput): SheetRowValues {
+export function planNewRow({ appId, snapshot, lowestOff, today, tagMatch }: NewRowInput): SheetRowValues {
     const { name, releaseDate } = snapshot.page;
     if (name === null) {
         throw new MissingValueError(Column.name);
@@ -51,11 +55,12 @@ export function planNewRow({ appId, snapshot, lowestOff, today }: NewRowInput): 
     if (releaseDate === null) {
         throw new MissingValueError(Column.releaseDate);
     }
+    const mode = tagMatch?.[Column.mode] ?? [];
     return {
         [Column.name]: buildNameFormula(appId, name),
         [Column.originalPrice]: unknownPricePlaceholder,
-        ...planRefresh(snapshot, {}, today, { lowestOff }).updates,
+        ...planRefresh(snapshot, {}, today, { lowestOff, features: tagMatch?.[Column.detail] ?? [] }).updates,
         [Column.wantLevel]: unratedWantLevel,
-        [Column.mode]: todoPlaceholder,
+        [Column.mode]: mode.length > 0 ? mode.join(' ') : todoPlaceholder,
     };
 }

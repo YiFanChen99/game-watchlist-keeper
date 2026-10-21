@@ -61,6 +61,8 @@ export const delistedMark = '-';
 export interface RefreshOptions {
     /** The 最低off cell from `planLowestOff`; `null` or absent leaves it alone. */
     lowestOff?: CellValue | null;
+    /** The feature description's words for a blank 備註; see `buildDetail`. */
+    features?: readonly string[];
 }
 
 const msPerDay = 24 * 60 * 60 * 1000;
@@ -242,7 +244,7 @@ export function planRefresh(
 
     const oldDetail = oldRow[Column.detail];
     const detail = isBlank(oldDetail)
-        ? buildDetail(page, playtime)
+        ? buildDetail(page, playtime, options.features)
         : mergeDetail(String(oldDetail).trim(), playtime);
     updates[Column.detail] = detail;
 

@@ -39,6 +39,10 @@ describe('buildDetail (COLUMNS.md 備註：新增)', () => {
         expect(buildDetail(page, playtime)).toBe(`TODO。26/03EA。中位125H，${percentRank} 725H。`);
     });
 
+    it('starts with the tag rules\' feature words, separated by spaces', () => {
+        expect(buildDetail(page, playtime, ['俯視角', '砍殺'])).toBe(`俯視角 砍殺。26/03EA。中位125H，${percentRank} 725H。`);
+    });
+
     it('keeps Steam text as the early access date when it is not a full date', () => {
         const vague: StorePageInfo = { ...page, releaseDate: { text: '2026 年第四季', date: null } };
         expect(buildDetail(vague, playtime)).toBe(`TODO。2026 年第四季EA。中位125H，${percentRank} 725H。`);

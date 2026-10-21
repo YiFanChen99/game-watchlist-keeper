@@ -45,6 +45,20 @@ describe('planNewRow', () => {
         });
     });
 
+    it('writes what the tag rules gave as the mode and the start of 備註, TODO where they gave nothing', () => {
+        const row = (mode: string[], detail: string[]) =>
+            planNewRow({ appId: 2868840, snapshot, lowestOff: 30, today, tagMatch: { [Column.mode]: mode, [Column.detail]: detail } });
+
+        expect(row(['多人', '動作'], ['俯視角'])).toMatchObject({
+            [Column.mode]: '多人 動作',
+            [Column.detail]: `俯視角。26/03EA。中位125H，${percentRank} 725H。`,
+        });
+        expect(row([], [])).toMatchObject({
+            [Column.mode]: 'TODO',
+            [Column.detail]: `TODO。26/03EA。中位125H，${percentRank} 725H。`,
+        });
+    });
+
     it('writes the price placeholder and no lowest discount without a price', () => {
         const unpriced: SteamSnapshot = { ...snapshot, page: { ...snapshot.page, originalPrice: null } };
         const row = planNewRow({ appId: 42, snapshot: unpriced, lowestOff: null, today });
