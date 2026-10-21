@@ -44,7 +44,7 @@ Google Sheets 的 CSP 要求 Trusted Types（`require-trusted-types-for 'script'
 
 ### 最低off 只看 ITAD
 
-SteamDB 擴充的區塊只在 Steam 商店頁上（`userscript-steam` 讀得到），Sheet 上沒有，所以這裡跟 `userscript-steamgifts` 一樣，`refreshGame` 只傳 ITAD 的 API key。ITAD 拿不到時（沒有 key、失敗或沒收錄）最低off 保留舊值，但舊值是數字時會改成 `!<舊值>`，表示可能過時，並在結果裡說明原因（規則見 `game-record-writer` 的 COLUMNS.md「最低off」）。
+SteamDB 擴充的區塊只在 Steam 商店頁上（`userscript-steam` 讀得到），Sheet 上沒有，所以這裡跟 `userscript-steamgifts` 一樣，`refreshGame` 只傳 ITAD 的 API key。ITAD 拿不到時（沒有 key、失敗或沒收錄）最低off 保留舊值，但舊值是數字時會改成 `!<舊值>`，表示可能過時，並在結果裡說明原因；ITAD 有回應但最低off 加上 `!` 時，結果裡也會說明是哪幾條（規則見 `game-record-writer` 的 COLUMNS.md「最低off」）。
 
 ## Development
 

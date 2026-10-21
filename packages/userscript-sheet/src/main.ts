@@ -1,7 +1,7 @@
 import {
     Column,
     formatChange,
-    formatLowestOffNote,
+    formatLowestOffNotes,
     refreshGame,
     refreshReadColumns,
     type SheetRowStore,
@@ -89,13 +89,13 @@ async function refreshSelectedRow(page: SheetLocation): Promise<string> {
             throw error;
         }
         const name = String(target.values[Column.name] ?? '');
-        const note = formatLowestOffNote(result, {
+        const notes = formatLowestOffNotes(result, {
             action: 'refresh',
             hasItadApiKey: key !== undefined,
             isItadApiKeyRefused: itadApiKey.forgetIfRefused(result.itadError),
             hasSteamDb: false,
         });
-        return [`已更新第 ${row} 列 ${name}。`, ...result.changes.map(formatChange), ...(note === null ? [] : [note])].join('\n');
+        return [`已更新第 ${row} 列 ${name}。`, ...result.changes.map(formatChange), ...notes].join('\n');
     });
 }
 

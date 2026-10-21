@@ -1,6 +1,6 @@
 import {
     Column,
-    formatLowestOffNote,
+    formatLowestOffNotes,
     refreshGame,
     sheetApiRowStore,
     type SheetRowStore,
@@ -13,7 +13,7 @@ export interface RefreshResult {
     /** The row's whole name cell, aliases included, as the dump's `B` has it. */
     name: string;
     changes: ValueChange[];
-    /** What 最低off went by, when ITAD gave nothing. */
+    /** What 最低off went by when ITAD gave nothing, and why it has `!`. */
     notes: string[];
 }
 
@@ -40,11 +40,11 @@ export async function refreshRow(appId: number, today: Date): Promise<RefreshRes
         };
         return refreshGame(appId, { fetchText, store: readingName, itadApiKey: key, now: () => today });
     });
-    const note = formatLowestOffNote(result, {
+    const notes = formatLowestOffNotes(result, {
         action: 'refresh',
         hasItadApiKey: key !== undefined,
         isItadApiKeyRefused: itadApiKey.forgetIfRefused(result.itadError),
         hasSteamDb: false,
     });
-    return { name, changes: result.changes, notes: note === null ? [] : [note] };
+    return { name, changes: result.changes, notes };
 }

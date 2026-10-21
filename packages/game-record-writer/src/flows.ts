@@ -92,12 +92,13 @@ export interface LowestOffNoteContext {
     hasSteamDb: boolean;
 }
 
-/**
- * The line a userscript shows when 最低off had no ITAD records to go by.
- *
- * @returns e.g. `沒有 ITAD 的價格紀錄，也沒有 SteamDB 區塊，最低off 沒有更新（…）。`; `null` when ITAD answered.
- */
-export function formatLowestOffNote(
+/** ITAD's answer, and why 最低off has `!` (`LowestOffPlan`). */
+export interface LowestOffOutcome extends ItadOutcome {
+    lowestOffDoubts: readonly string[];
+}
+
+/** Why ITAD gave nothing, and what 最低off went by instead; `null` when ITAD answered. */
+function formatNoItadNote(
     { itadHistory, itadError }: ItadOutcome,
     { action, hasItadApiKey, isItadApiKeyRefused, hasSteamDb }: LowestOffNoteContext,
 ): string | null {
@@ -117,12 +118,25 @@ export function formatLowestOffNote(
         : `${reason}，也沒有 SteamDB 區塊，最低off 沒有更新（原本是數字的話前面加上 !，表示可能過時）。`;
 }
 
-export interface RefreshResult extends RefreshPlan, ItadOutcome {}
+/**
+ * The lines a userscript shows about 最低off: why ITAD gave nothing and what 最低off went by
+ * instead, and why it has `!`.
+ *
+ * @returns e.g. `沒有 ITAD 的價格紀錄，也沒有 SteamDB 區塊，最低off 沒有更新（…）。` or
+ * `最低off 加上 !：ITAD 現在的原價是 749，不是商店頁的 799，可能追蹤別的方案。`; empty when there is nothing to tell.
+ */
+export function formatLowestOffNotes(outcome: LowestOffOutcome, context: LowestOffNoteContext): string[] {
+    const noItad = formatNoItadNote(outcome, context);
+    const doubts = outcome.lowestOffDoubts.length === 0 ? null : `最低off 加上 !：${outcome.lowestOffDoubts.join('；')}。`;
+    return [noItad, doubts].filter(note => note !== null);
+}
+
+export interface RefreshResult extends RefreshPlan, LowestOffOutcome {}
 
 /**
  * Refresh one game's sheet row from Steam and ITAD.
  *
- * @returns The written cells, the price / release date changes to show the user, and ITAD's answer.
+ * @returns The written cells, the price / release date changes to show the user, ITAD's answer, and why 最低off has `!`.
  */
 export async function refreshGame(appId: number, deps: RefreshDeps): Promise<RefreshResult> {
     const [snapshot, oldRow, itad] = await Promise.all([
@@ -132,12 +146,12 @@ export async function refreshGame(appId: number, deps: RefreshDeps): Promise<Ref
     ]);
     const today = deps.now?.() ?? new Date();
     const lowestOff = planLowestOff(snapshot.page, { itadHistory: itad.itadHistory, steamDb: deps.steamDb ?? null }, oldRow, today);
-    const plan = planRefresh(snapshot, oldRow, today, { lowestOff });
+    const plan = planRefresh(snapshot, oldRow, today, { lowestOff: lowestOff.cell });
     await deps.store.write(appId, plan.updates);
-    return { ...plan, ...itad };
+    return { ...plan, ...itad, lowestOffDoubts: lowestOff.doubts };
 }
 
-export interface AddResult extends ItadOutcome {
+export interface AddResult extends LowestOffOutcome {
     /** The written cells. */
     row: SheetRowValues;
 }
@@ -145,7 +159,7 @@ export interface AddResult extends ItadOutcome {
 /**
  * Add a row for a game the sheet does not have yet; see `planNewRow`.
  *
- * @returns The written cells, and ITAD's answer.
+ * @returns The written cells, ITAD's answer, and why 最低off has `!`.
  */
 export async function addGame(appId: number, deps: RefreshDeps): Promise<AddResult> {
     const [snapshot, itad] = await Promise.all([
@@ -153,14 +167,10 @@ export async function addGame(appId: number, deps: RefreshDeps): Promise<AddResu
         fetchItad(appId, deps),
     ]);
     const today = deps.now?.() ?? new Date();
-    const row = planNewRow({
-        appId,
-        snapshot,
-        lowestOff: planLowestOff(snapshot.page, { itadHistory: itad.itadHistory, steamDb: deps.steamDb ?? null }, null, today),
-        today,
-    });
+    const lowestOff = planLowestOff(snapshot.page, { itadHistory: itad.itadHistory, steamDb: deps.steamDb ?? null }, null, today);
+    const row = planNewRow({ appId, snapshot, lowestOff: lowestOff.cell, today });
     await deps.store.append(appId, row);
-    return { row, ...itad };
+    return { row, ...itad, lowestOffDoubts: lowestOff.doubts };
 }
 
 /**

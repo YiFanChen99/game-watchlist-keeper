@@ -7,7 +7,7 @@ import {
     Column,
     extractPlaytime,
     fetchPlaytime,
-    formatLowestOffNote,
+    formatLowestOffNotes,
     refreshGame,
     refreshReadColumns,
     sheetApiRowStore,
@@ -85,11 +85,13 @@ describe('refreshGame', () => {
         expect(answered.updates[Column.lowestOff]).toBe('!96');
         expect(answered.itadHistory).not.toBeNull();
         expect(answered.itadError).toBeNull();
+        expect(answered.lowestOffDoubts).toEqual(['ITAD 的最低價 11 是原價 22 時的價格，之後漲到 261']);
 
         const refused = await refresh('wrong');
         expect(refused.updates[Column.lowestOff]).toBe('!90');
         expect(refused.itadHistory).toBeNull();
         expect(refused.itadError?.message).toContain('403');
+        expect(refused.lowestOffDoubts).toEqual([]);
     });
 
     it('asks ITAD nothing without an API key', async () => {
@@ -164,22 +166,28 @@ describe('fetchPlaytime', () => {
     });
 });
 
-describe('formatLowestOffNote', () => {
-    const records = { itadHistory: [], itadError: null };
-    const none = { itadHistory: null, itadError: null };
+describe('formatLowestOffNotes', () => {
+    const records = { itadHistory: [], itadError: null, lowestOffDoubts: [] };
+    const none = { itadHistory: null, itadError: null, lowestOffDoubts: [] };
     const context = { action: 'refresh', hasItadApiKey: true, isItadApiKeyRefused: false, hasSteamDb: false } as const;
 
-    it('says nothing when ITAD answered', () => {
-        expect(formatLowestOffNote(records, context)).toBeNull();
+    it('says nothing when ITAD answered and 最低off has no !', () => {
+        expect(formatLowestOffNotes(records, context)).toEqual([]);
     });
 
     it('tells why ITAD gave nothing, and what 最低off went by instead', () => {
-        expect(formatLowestOffNote(none, { ...context, hasItadApiKey: false }))
-            .toBe('沒有 ITAD 的 API key，也沒有 SteamDB 區塊，最低off 沒有更新（原本是數字的話前面加上 !，表示可能過時）。');
-        expect(formatLowestOffNote(none, { ...context, action: 'add' })).toBe('ITAD 沒有這個遊戲，也沒有 SteamDB 區塊，最低off 寫 0。');
-        expect(formatLowestOffNote({ itadHistory: null, itadError: new Error('Failed: 429') }, { ...context, hasSteamDb: true }))
-            .toBe('ITAD 沒有回應（Failed: 429），最低off 只看 SteamDB 區塊，前面加上 !。');
-        expect(formatLowestOffNote({ itadHistory: null, itadError: new Error('Failed: 403') }, { ...context, isItadApiKeyRefused: true }))
+        expect(formatLowestOffNotes(none, { ...context, hasItadApiKey: false }))
+            .toEqual(['沒有 ITAD 的 API key，也沒有 SteamDB 區塊，最低off 沒有更新（原本是數字的話前面加上 !，表示可能過時）。']);
+        expect(formatLowestOffNotes(none, { ...context, action: 'add' })).toEqual(['ITAD 沒有這個遊戲，也沒有 SteamDB 區塊，最低off 寫 0。']);
+        expect(formatLowestOffNotes({ ...none, itadError: new Error('Failed: 429') }, { ...context, hasSteamDb: true }))
+            .toEqual(['ITAD 沒有回應（Failed: 429），最低off 只看 SteamDB 區塊，前面加上 !。']);
+        expect(formatLowestOffNotes({ ...none, itadError: new Error('Failed: 403') }, { ...context, isItadApiKeyRefused: true })[0])
             .toMatch(/^ITAD 拒絕了 API key（下次會重新詢問），/);
+    });
+
+    it('tells why 最低off has !, on one line', () => {
+        const doubts = ['SteamDB 區塊的最低價 35 比 ITAD 近 2.5 年的 41 低', 'ITAD 現在的原價是 78，不是商店頁的 82，可能追蹤別的方案'];
+        expect(formatLowestOffNotes({ ...records, lowestOffDoubts: doubts }, context))
+            .toEqual(['最低off 加上 !：SteamDB 區塊的最低價 35 比 ITAD 近 2.5 年的 41 低；ITAD 現在的原價是 78，不是商店頁的 82，可能追蹤別的方案。']);
     });
 });

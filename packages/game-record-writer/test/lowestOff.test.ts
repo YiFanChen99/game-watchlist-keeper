@@ -31,9 +31,14 @@ const steamDbOnly = (lowestPrice: number): LowestOffSources => ({ itadHistory: n
 const old = (originalPrice: CellValue, lowestOff: CellValue): SheetRowValues =>
     ({ [Column.originalPrice]: originalPrice, [Column.lowestOff]: lowestOff });
 
-/** Plan for `page` at `originalPrice`; `oldRow` null for a new row. */
-function plan(sources: LowestOffSources, oldRow: SheetRowValues | null, originalPrice = 408, overrides: Partial<StorePageInfo> = {}) {
+/** The doubts and cell planned for `page` at `originalPrice`; `oldRow` null for a new row. */
+function planWithDoubts(sources: LowestOffSources, oldRow: SheetRowValues | null, originalPrice = 408, overrides: Partial<StorePageInfo> = {}) {
     return planLowestOff({ ...page, originalPrice, ...overrides }, sources, oldRow, today);
+}
+
+/** The cell planned for `page` at `originalPrice`; `oldRow` null for a new row. */
+function plan(sources: LowestOffSources, oldRow: SheetRowValues | null, originalPrice = 408, overrides: Partial<StorePageInfo> = {}) {
+    return planWithDoubts(sources, oldRow, originalPrice, overrides).cell;
 }
 
 describe('planLowestOff (COLUMNS.md 最低off)', () => {
@@ -75,8 +80,8 @@ describe('planLowestOff (COLUMNS.md 最低off)', () => {
 
         it('writes 100 for a free game, blank without a price, and - when no longer sold (#14)', () => {
             expect(plan(itad(hades), null, 0)).toBe(100);
-            expect(planLowestOff({ ...page, originalPrice: null }, itad(hades), null, today)).toBeNull();
-            expect(planLowestOff({ ...page, originalPrice: null, isDelisted: true }, itad(hades), null, today)).toBe('-');
+            expect(planLowestOff({ ...page, originalPrice: null }, itad(hades), null, today).cell).toBeNull();
+            expect(planLowestOff({ ...page, originalPrice: null, isDelisted: true }, itad(hades), null, today).cell).toBe('-');
         });
     });
 
@@ -156,8 +161,37 @@ describe('planLowestOff (COLUMNS.md 最低off)', () => {
         });
 
         it('marks the old number outdated without a price, and writes - when no longer sold (#14)', () => {
-            expect(planLowestOff({ ...page, originalPrice: null }, itad(hades), old(408, 75), today)).toBe('!75');
-            expect(planLowestOff({ ...page, originalPrice: null, isDelisted: true }, itad(hades), old(408, 75), today)).toBe('-');
+            expect(planLowestOff({ ...page, originalPrice: null }, itad(hades), old(408, 75), today).cell).toBe('!75');
+            expect(planLowestOff({ ...page, originalPrice: null, isDelisted: true }, itad(hades), old(408, 75), today).cell).toBe('-');
+        });
+    });
+
+    describe('why it has !', () => {
+        it('tells each doubt about ITAD\'s lowest price', () => {
+            expect(planWithDoubts(itad(reventure), null, 261).doubts).toEqual(['ITAD 的最低價 11 是原價 22 時的價格，之後漲到 261']);
+            const history = [record('2026-01-01', 400, 400), record('2025-05-01', 100, 400), record('2024-12-11', 400, 400)];
+            expect(planWithDoubts(itad(history, 50), null, 400).doubts).toEqual(['SteamDB 區塊的最低價 50 比 ITAD 近 2.5 年的 100 低']);
+            const dredge = [record('2026-10-08', 749, 749), record('2026-10-01', 299, 749), record('2024-12-11', 749, 749)];
+            expect(planWithDoubts(itad(dredge), null, 799).doubts).toEqual([
+                'ITAD 的最低價 299 是原價 749 時的價格，之後漲到 799',
+                'ITAD 現在的原價是 749，不是商店頁的 799，可能追蹤別的方案',
+            ]);
+        });
+
+        it('tells why a lower old one is kept', () => {
+            expect(planWithDoubts(itad(hades), old(408, 80)).doubts)
+                .toEqual(['保留舊值 80（原價 408 時約 82），比新的最低價 102 低，ITAD 的紀錄不到 5 年，無法排除它']);
+            const reached = [record('2026-08-01', 102, 408), record('2023-01-02', 408, 408), record('2023-01-01', 81, 408), record('2020-01-01', 408, 408)];
+            expect(planWithDoubts(itad(reached), old(408, 80)).doubts)
+                .toEqual(['保留舊值 80（原價 408 時約 82），比新的最低價 102 低，ITAD 5 年內有到 81']);
+            expect(planWithDoubts(steamDbOnly(102), old(408, 80)).doubts)
+                .toEqual(['保留舊值 80（原價 408 時約 82），比新的最低價 102 低，沒有 ITAD 的紀錄可以排除它']);
+        });
+
+        it('tells nothing without !, or when ITAD gave nothing, which formatLowestOffNotes tells of', () => {
+            expect(planWithDoubts(itad(hades, 102), null).doubts).toEqual([]);
+            expect(planWithDoubts(steamDbOnly(102), null).doubts).toEqual([]);
+            expect(planWithDoubts(noLowestOffSources, old(408, 75)).doubts).toEqual([]);
         });
     });
 });

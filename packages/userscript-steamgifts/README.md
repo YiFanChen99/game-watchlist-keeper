@@ -37,7 +37,7 @@
 
 - 成功：`已更新。` 加上變動（例如 `原價 400 → 408（+8）`），1 分鐘後或點一下就消失。標註與 localStorage 的 `ekkoGames` 會跟著改成今天更新，不重抓整張表，所以年份和 ↻ 一起消失。
 - Sheet 沒有這款遊戲：只提示，不新增（新增在 Steam 商店頁用 `userscript-steam` 做）。這個訊息和錯誤訊息都保留到點掉為止。
-- 最低off 取自 ITAD（SteamGifts 上沒有 SteamDB 區塊）。ITAD 拿不到時（沒有 key、失敗或沒收錄）不會更新，舊值是數字時改成 `!<舊值>`，表示可能過時，並在結果裡說明原因（規則見 `game-record-writer` 的 COLUMNS.md「最低off」）。
+- 最低off 取自 ITAD（SteamGifts 上沒有 SteamDB 區塊）。ITAD 拿不到時（沒有 key、失敗或沒收錄）不會更新，舊值是數字時改成 `!<舊值>`，表示可能過時，並在結果裡說明原因；ITAD 有回應但最低off 加上 `!` 時，結果裡也會說明是哪幾條（規則見 `game-record-writer` 的 COLUMNS.md「最低off」）。
 
 **⟲ 重新讀取**：每個標註最後都有，在 Sheet 手動改了、新增或補好這款遊戲後按：
 

@@ -266,6 +266,18 @@ describe('update', () => {
         expect(status()).not.toContain('最低off');
     });
 
+    it('tells why 最低off from ITAD has !', async () => {
+        savedItadApiKey = fixtureItadApiKey;
+        await start();
+        addSteamDbBlock();
+
+        sheetButton().click();
+        await settle();
+
+        expect(api.updateRow).toHaveBeenCalledWith(appId, expect.objectContaining({ [Column.lowestOff]: '!0' }));
+        expect(status()).toContain('最低off 加上 !：SteamDB 區塊的最低價 349 比 ITAD 近 2.5 年的 499 低。');
+    });
+
     it('forgets a key ITAD refuses, and says so', async () => {
         savedItadApiKey = 'refused';
         await start();

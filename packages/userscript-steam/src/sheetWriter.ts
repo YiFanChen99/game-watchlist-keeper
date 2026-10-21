@@ -3,11 +3,11 @@ import {
     addGame,
     fetchPlaytime,
     formatChange,
-    formatLowestOffNote,
+    formatLowestOffNotes,
     MissingValueError,
     refreshGame,
     sheetApiRowStore,
-    type ItadOutcome,
+    type LowestOffOutcome,
 } from '@watchlist/game-record-writer';
 import { SheetApiError } from '@watchlist/sheet-api';
 import { readSteamDbPrices, type SteamDbPrices } from '@watchlist/steam-info-scraper';
@@ -74,15 +74,14 @@ export function startSheetWriter(): void {
         return { steamDb: readSteamDbPrices(document), itadApiKey: itadApiKey.get() };
     }
 
-    /** The note on what 最低off went by, when ITAD gave nothing; forgets a refused key. */
-    function lowestOffNotes(action: 'add' | 'refresh', sources: LowestOffSources, outcome: ItadOutcome): string[] {
-        const note = formatLowestOffNote(outcome, {
+    /** The notes on what 最低off went by when ITAD gave nothing, and why it has `!`; forgets a refused key. */
+    function lowestOffNotes(action: 'add' | 'refresh', sources: LowestOffSources, outcome: LowestOffOutcome): string[] {
+        return formatLowestOffNotes(outcome, {
             action,
             hasItadApiKey: sources.itadApiKey !== undefined,
             isItadApiKeyRefused: itadApiKey.forgetIfRefused(outcome.itadError),
             hasSteamDb: sources.steamDb !== null,
         });
-        return note === null ? [] : [note];
     }
 
     async function add(): Promise<void> {

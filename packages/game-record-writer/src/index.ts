@@ -14,6 +14,7 @@ export {
     noLowestOffSources,
     planLowestOff,
     recentLowestPriceMonths,
+    type LowestOffPlan,
     type LowestOffSources,
 } from './lowestOff';
 export { buildDetail, extractPlaytime, formatPlaytime, mergeDetail } from './detail';
@@ -35,12 +36,13 @@ export { buildNameFormula, MissingValueError, planNewRow, unratedWantLevel, type
 export {
     addGame,
     fetchPlaytime,
-    formatLowestOffNote,
+    formatLowestOffNotes,
     refreshGame,
     sheetApiRowStore,
     type AddResult,
     type ItadOutcome,
     type LowestOffNoteContext,
+    type LowestOffOutcome,
     type RefreshDeps,
     type RefreshResult,
     type SheetRowStore,

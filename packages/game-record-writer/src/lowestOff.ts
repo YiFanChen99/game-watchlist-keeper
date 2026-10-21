@@ -1,7 +1,7 @@
 import type { ItadPriceRecord, SteamDbPrices, StorePageInfo } from '@watchlist/steam-info-scraper';
 
 import { Column, type CellValue, type SheetRowValues } from './columns';
-import { delistedMark, markOutdated, unknownPricePlaceholder, unreliableScorePrefix } from './refresh';
+import { delistedMark, formatPrice, markOutdated, unknownPricePlaceholder, unreliableScorePrefix } from './refresh';
 
 /** 最低off of a new row without any lowest price to go by. */
 export const defaultLowestOff = 0;
@@ -41,6 +41,8 @@ interface FreshLowestOff {
     lowestPrice: number;
     /** Some reason to doubt it; see COLUMNS.md 最低off. */
     isDoubtful: boolean;
+    /** Why it is doubtful, for the user; empty for the SteamDB block alone, which `formatLowestOffNotes` tells of. */
+    doubts: string[];
 }
 
 function monthsBefore(today: Date, months: number): Date {
@@ -81,19 +83,28 @@ function planFreshLowestOff(originalPrice: number, { itadHistory, steamDb }: Low
     const steamDbPrice = steamDb?.lowestPrice ?? null;
     const itadLowest = itadHistory && lowestRecordSince(itadHistory, monthsBefore(today, recentLowestPriceMonths));
     if (itadHistory && itadLowest) {
-        const price = Math.round(originalPrice);
-        return {
-            off: offOf(itadLowest.price, originalPrice),
-            lowestPrice: itadLowest.price,
-            isDoubtful: (steamDbPrice !== null && steamDbPrice < itadLowest.price)
-                // The price rose since the lowest one.
-                || price > Math.round(itadLowest.regular)
-                // ITAD may follow another package, e.g. an edition.
-                || price !== Math.round(itadHistory[0]!.regular),
-        };
+        const price = formatPrice(originalPrice);
+        const lowest = formatPrice(itadLowest.price);
+        const regularThen = formatPrice(itadLowest.regular);
+        const regularNow = formatPrice(itadHistory[0]!.regular);
+        const doubts: string[] = [];
+        if (steamDbPrice !== null && steamDbPrice < itadLowest.price) {
+            doubts.push(`SteamDB 區塊的最低價 ${formatPrice(steamDbPrice)} 比 ITAD 近 2.5 年的 ${lowest} 低`);
+        }
+        // The price rose since the lowest one.
+        if (price > regularThen) {
+            doubts.push(`ITAD 的最低價 ${lowest} 是原價 ${regularThen} 時的價格，之後漲到 ${price}`);
+        }
+        // ITAD may follow another package, e.g. an edition.
+        if (price !== regularNow) {
+            doubts.push(`ITAD 現在的原價是 ${regularNow}，不是商店頁的 ${price}，可能追蹤別的方案`);
+        }
+        return { off: offOf(itadLowest.price, originalPrice), lowestPrice: itadLowest.price, isDoubtful: doubts.length > 0, doubts };
     }
     // SteamDB alone: no original price of its time to check it against.
-    return steamDbPrice === null ? null : { off: offOf(steamDbPrice, originalPrice), lowestPrice: steamDbPrice, isDoubtful: true };
+    return steamDbPrice === null
+        ? null
+        : { off: offOf(steamDbPrice, originalPrice), lowestPrice: steamDbPrice, isDoubtful: true, doubts: [] };
 }
 
 /** The lowest price an old 最低off stands for. */
@@ -105,6 +116,10 @@ interface OldLowestPrice {
      * it was taken from may be up to half a percent of the old 原價 higher than `price`.
      */
     highest: number;
+    /** The old 原價. */
+    originalPrice: number;
+    /** The old 最低off's number. */
+    off: number;
 }
 
 function oldLowestPrice(oldRow: SheetRowValues): OldLowestPrice | null {
@@ -113,48 +128,72 @@ function oldLowestPrice(oldRow: SheetRowValues): OldLowestPrice | null {
     if (!Number.isFinite(oldPrice) || oldPrice <= 0 || oldPrice === unknownPricePlaceholder || oldOff === undefined) {
         return null;
     }
-    return { price: oldPrice * (1 - Number(oldOff) / 100), highest: oldPrice * (1 - (Number(oldOff) - 0.5) / 100) };
+    const off = Number(oldOff);
+    return { price: oldPrice * (1 - off / 100), highest: oldPrice * (1 - (off - 0.5) / 100), originalPrice: oldPrice, off };
 }
 
-const formatFresh = ({ off, isDoubtful }: FreshLowestOff): CellValue => (isDoubtful ? `${unreliableScorePrefix}${off}` : off);
+/** The 最低off cell, and why it has `!`. */
+export interface LowestOffPlan {
+    /** `null` to leave the cell alone, or blank in a new row. */
+    cell: CellValue | null;
+    /**
+     * Why `cell` has `!`, for the user, e.g. `SteamDB 區塊的最低價 35 比 ITAD 近 2.5 年的 41 低`.
+     * Empty without `!`, and when ITAD gave nothing, which `formatLowestOffNotes` tells of.
+     */
+    doubts: string[];
+}
+
+const plainPlan = (cell: CellValue | null): LowestOffPlan => ({ cell, doubts: [] });
+
+const freshPlan = ({ off, isDoubtful, doubts }: FreshLowestOff): LowestOffPlan =>
+    ({ cell: isDoubtful ? `${unreliableScorePrefix}${off}` : off, doubts });
 
 /**
  * The 最低off cell: the lowest discount off the current 原價, in percent (COLUMNS.md 最低off).
  *
  * @param oldRow The row's `refreshReadColumns`; `null` for a new row.
- * @returns `null` to leave the cell alone, or blank in a new row.
  */
 export function planLowestOff(
     page: StorePageInfo,
     sources: LowestOffSources,
     oldRow: SheetRowValues | null,
     today: Date,
-): CellValue | null {
+): LowestOffPlan {
     if (page.isDelisted) {
-        return delistedMark;
+        return plainPlan(delistedMark);
     }
     const { originalPrice } = page;
     if (originalPrice === 0) {
-        return freeLowestOff;
+        return plainPlan(freeLowestOff);
     }
     const fresh = originalPrice === null ? null : planFreshLowestOff(originalPrice, sources, today);
     if (oldRow === null) {
-        return originalPrice === null ? null : fresh ? formatFresh(fresh) : defaultLowestOff;
+        return originalPrice === null ? plainPlan(null) : fresh ? freshPlan(fresh) : plainPlan(defaultLowestOff);
     }
     if (originalPrice === null || fresh === null) {
-        return markOutdated(oldRow[Column.lowestOff]);
+        return plainPlan(markOutdated(oldRow[Column.lowestOff]));
     }
 
     // Lower only beyond rounding: 63% off 799 stands for 291.6–299.6, the same lowest price as 299.
     const old = oldLowestPrice(oldRow);
     if (old === null || old.highest >= fresh.lowestPrice) {
-        return formatFresh(fresh);
+        return freshPlan(fresh);
     }
     // The old one is lower: keep it unless ITAD shows it is older than `keptLowestPriceMonths`.
     const { itadHistory } = sources;
     const keptLowest = itadHistory && lowestRecordSince(itadHistory, monthsBefore(today, keptLowestPriceMonths));
-    const isDropped = !!itadHistory && !!keptLowest
-        && coversMonths(itadHistory, keptLowestPriceMonths, page, today)
-        && keptLowest.price > old.highest;
-    return isDropped ? formatFresh(fresh) : `${unreliableScorePrefix}${offOf(old.price, originalPrice)}`;
+    const isCovered = !!itadHistory && coversMonths(itadHistory, keptLowestPriceMonths, page, today);
+    if (isCovered && keptLowest && keptLowest.price > old.highest) {
+        return freshPlan(fresh);
+    }
+    const why = !itadHistory
+        ? '沒有 ITAD 的紀錄可以排除它'
+        : isCovered && keptLowest
+            ? `ITAD 5 年內有到 ${formatPrice(keptLowest.price)}`
+            : 'ITAD 的紀錄不到 5 年，無法排除它';
+    const oldOne = `舊值 ${old.off}（原價 ${formatPrice(old.originalPrice)} 時約 ${formatPrice(old.price)}）`;
+    return {
+        cell: `${unreliableScorePrefix}${offOf(old.price, originalPrice)}`,
+        doubts: [`保留${oldOne}，比新的最低價 ${formatPrice(fresh.lowestPrice)} 低，${why}`],
+    };
 }
