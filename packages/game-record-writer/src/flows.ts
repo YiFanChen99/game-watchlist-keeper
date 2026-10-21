@@ -97,19 +97,24 @@ export interface LowestOffOutcome extends ItadOutcome {
     lowestOffDoubts: readonly string[];
 }
 
-/** Why ITAD gave nothing, and what 最低off went by instead; `null` when ITAD answered. */
+/**
+ * Why ITAD gave no price records, and what 最低off went by instead; `null` when it gave some.
+ * A game ITAD knows may have no Steam TW records, which leaves 最低off as nothing does.
+ */
 function formatNoItadNote(
     { itadHistory, itadError }: ItadOutcome,
     { action, hasItadApiKey, isItadApiKeyRefused, hasSteamDb }: LowestOffNoteContext,
 ): string | null {
-    if (itadHistory !== null) {
+    if (itadHistory !== null && itadHistory.length > 0) {
         return null;
     }
     const reason = isItadApiKeyRefused
         ? 'ITAD 拒絕了 API key（下次會重新詢問）'
         : itadError
             ? `ITAD 沒有回應（${itadError.message}）`
-            : hasItadApiKey ? 'ITAD 沒有這個遊戲' : '沒有 ITAD 的 API key';
+            : itadHistory
+                ? 'ITAD 沒有這個遊戲在 Steam TW 的價格紀錄'
+                : hasItadApiKey ? 'ITAD 沒有這個遊戲' : '沒有 ITAD 的 API key';
     if (hasSteamDb) {
         return `${reason}，最低off 只看 SteamDB 區塊，前面加上 !。`;
     }

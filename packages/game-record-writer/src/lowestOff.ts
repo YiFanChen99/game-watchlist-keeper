@@ -186,7 +186,7 @@ export function planLowestOff(
     if (isCovered && keptLowest && keptLowest.price > old.highest) {
         return freshPlan(fresh);
     }
-    const why = !itadHistory
+    const why = !itadHistory?.length
         ? '沒有 ITAD 的紀錄可以排除它'
         : isCovered && keptLowest
             ? `ITAD 5 年內有到 ${formatPrice(keptLowest.price)}`

@@ -167,7 +167,7 @@ describe('fetchPlaytime', () => {
 });
 
 describe('formatLowestOffNotes', () => {
-    const records = { itadHistory: [], itadError: null, lowestOffDoubts: [] };
+    const records = { itadHistory: [{ time: new Date(2026, 0, 1), price: 82, regular: 82 }], itadError: null, lowestOffDoubts: [] };
     const none = { itadHistory: null, itadError: null, lowestOffDoubts: [] };
     const context = { action: 'refresh', hasItadApiKey: true, isItadApiKeyRefused: false, hasSteamDb: false } as const;
 
@@ -183,6 +183,14 @@ describe('formatLowestOffNotes', () => {
             .toEqual(['ITAD 沒有回應（Failed: 429），最低off 只看 SteamDB 區塊，前面加上 !。']);
         expect(formatLowestOffNotes({ ...none, itadError: new Error('Failed: 403') }, { ...context, isItadApiKeyRefused: true })[0])
             .toMatch(/^ITAD 拒絕了 API key（下次會重新詢問），/);
+    });
+
+    it('tells of a game ITAD knows without Steam TW records, as it leaves 最低off as nothing does', () => {
+        // IDLE DEVILS: the old 26 became !26 from the Sheet without a word.
+        expect(formatLowestOffNotes({ ...none, itadHistory: [] }, context))
+            .toEqual(['ITAD 沒有這個遊戲在 Steam TW 的價格紀錄，也沒有 SteamDB 區塊，最低off 沒有更新（原本是數字的話前面加上 !，表示可能過時）。']);
+        expect(formatLowestOffNotes({ ...none, itadHistory: [] }, { ...context, hasSteamDb: true }))
+            .toEqual(['ITAD 沒有這個遊戲在 Steam TW 的價格紀錄，最低off 只看 SteamDB 區塊，前面加上 !。']);
     });
 
     it('tells why 最低off has !, on one line', () => {

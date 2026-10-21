@@ -186,6 +186,8 @@ describe('planLowestOff (COLUMNS.md 最低off)', () => {
                 .toEqual(['保留舊值 80（原價 408 時約 82），比新的最低價 102 低，ITAD 5 年內有到 81']);
             expect(planWithDoubts(steamDbOnly(102), old(408, 80)).doubts)
                 .toEqual(['保留舊值 80（原價 408 時約 82），比新的最低價 102 低，沒有 ITAD 的紀錄可以排除它']);
+            expect(planWithDoubts(itad([], 102), old(408, 80)).doubts)
+                .toEqual(['保留舊值 80（原價 408 時約 82），比新的最低價 102 低，沒有 ITAD 的紀錄可以排除它']);
         });
 
         it('tells nothing without !, or when ITAD gave nothing, which formatLowestOffNotes tells of', () => {
