@@ -5,7 +5,7 @@
  * With app ids, only those are fetched, leaving the other fixtures as they are.
  * With --itad-only, only the IsThereAnyDeal fixtures are fetched.
  *
- * Store pages are fetched as an anonymous tchinese/TW visitor. Appreviews
+ * Store pages are fetched as an anonymous tchinese/TW visitor. GetAppReviews
  * responses keep only the fields the parsers read, so the fixtures stay small
  * and contain no review text.
  *
@@ -54,58 +54,54 @@ async function fetchText(url, extraHeaders = {}) {
 }
 
 function trimAppReviews(json) {
-    const data = JSON.parse(json);
+    const { response } = JSON.parse(json);
     return {
-        success: data.success,
-        query_summary: data.query_summary,
-        reviews: data.reviews.map(review => ({
-            recommendationid: review.recommendationid,
-            voted_up: review.voted_up,
-            author: { playtime_forever: review.author.playtime_forever },
-        })),
+        response: {
+            query_summary: response.query_summary,
+            // Steam leaves `reviews` out when none match.
+            ...(response.reviews ? {
+                reviews: response.reviews.map(review => ({
+                    recommendationid: review.recommendationid,
+                    voted_up: review.voted_up,
+                    author: { playtime_forever: review.author.playtime_forever },
+                })),
+            } : {}),
+        },
     };
 }
 
 /** Free apps: `fetchSteamSnapshot` counts every purchase type for them. Keep in sync with `apps`. */
 const freeApps = new Set(['570']);
 
-/** Same as `unfilteredReviewParams` in src/urls.ts, which this script cannot import. Keep them in sync. */
-const unfilteredReviewParams = {
-    date_range_type: 'all',
-    playtime_filter_min: '0',
-    playtime_filter_max: '0',
-    playtime_type: 'all',
-    hardware_os: 'all',
-    hardware_cpu: 'all',
-    hardware_gpu: 'all',
-    hardware_device_type: 'all',
-};
+/** Same as `reviewsUrl` and `unfilteredReviewInput` in src/urls.ts, which this script cannot import. Keep them in sync. */
+const reviewsUrl = input => `https://api.steampowered.com/IUserReviewsService/GetAppReviews/v1/?input_json=${encodeURIComponent(JSON.stringify({
+    ...input,
+    playtime_min_hours: 0,
+    playtime_max_hours: 0,
+    primarily_steam_deck: false,
+    languages: ['all'],
+    review_type: 0,
+}))}`;
 
-/** Same as `reviewSummaryUrl` in src/urls.ts, which this script cannot import. Keep them in sync. */
-const reviewSummaryQuery = purchaseType => new URLSearchParams({
-    json: '1',
-    filter: 'all',
-    ...unfilteredReviewParams,
-    language: 'all',
-    review_type: 'all',
-    purchase_type: purchaseType,
-    filter_offtopic_activity: '1',
-    num_per_page: '0',
-}).toString();
+/** Same as `reviewSummaryUrl` in src/urls.ts. Keep them in sync. */
+const reviewSummaryUrl = (appId, purchaseType) => reviewsUrl({
+    appid: Number(appId),
+    filter: 0,
+    purchase_type: purchaseType === 'steam' ? 0 : 1,
+    filter_offtopic_activity: true,
+    num_per_page: 1,
+});
 
-/** Same as `appReviewsUrl` in src/urls.ts (30 days only), which this script cannot import. Keep them in sync. */
-const appReviewsQuery = new URLSearchParams({
-    json: '1',
-    filter: 'all',
-    day_range: '30',
-    ...unfilteredReviewParams,
-    language: 'all',
-    review_type: 'all',
-    purchase_type: 'all',
-    filter_offtopic_activity: '0',
-    use_review_quality: '1',
-    num_per_page: '40',
-}).toString();
+/** Same as `appReviewsUrl` in src/urls.ts (30 days only). Keep them in sync. */
+const appReviewsUrl = appId => reviewsUrl({
+    appid: Number(appId),
+    filter: 0,
+    day_range: 30,
+    purchase_type: 1,
+    filter_offtopic_activity: false,
+    use_review_quality: true,
+    num_per_page: 40,
+});
 
 /** Same as `itadLookupUrl` and `itadHistoryUrl` in src/itad.ts, which this script cannot import. Keep them in sync. */
 const itadLookupUrl = appId => `https://api.isthereanydeal.com/games/lookup/v1?appid=${appId}`;
@@ -163,12 +159,13 @@ for (const appId of requested.length ? requested : Object.keys(apps)) {
     const html = await fetchText(`https://store.steampowered.com/app/${appId}/?l=tchinese&cc=tw`);
     await writeFile(new URL(`store/${appId}.html`, dir), html);
 
-    const reviews = await fetchText(`https://store.steampowered.com/ajaxappreviews/${appId}?${appReviewsQuery}`);
+    const reviews = await fetchText(appReviewsUrl(appId));
     await writeFile(new URL(`appreviews/${appId}.json`, dir), `${JSON.stringify(trimAppReviews(reviews), null, 2)}\n`);
 
     const purchaseType = freeApps.has(appId) ? 'all' : 'steam';
-    const summary = await fetchText(`https://store.steampowered.com/ajaxappreviews/${appId}?${reviewSummaryQuery(purchaseType)}`);
-    await writeFile(new URL(`reviewsummary/${appId}.json`, dir), `${JSON.stringify(trimAppReviews(summary), null, 2)}\n`);
+    const summary = await fetchText(reviewSummaryUrl(appId, purchaseType));
+    const { query_summary } = JSON.parse(summary).response;
+    await writeFile(new URL(`reviewsummary/${appId}.json`, dir), `${JSON.stringify({ response: { query_summary } }, null, 2)}\n`);
 
     console.log(`fetched ${appId}`);
 }

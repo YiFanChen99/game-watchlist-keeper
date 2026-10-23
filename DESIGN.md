@@ -56,10 +56,9 @@
 - 讀名稱欄整欄的公式約 0.7 秒。整表傾印約 159KB，超過 CacheService 單一值的 100KB，所以要 gzip（約 73KB）後分塊存。
 
 ### Steam
-- `store.steampowered.com/appreviews/<appid>` 自 2026-10 起一律 302 回商店首頁（HTML）；商店頁的評論區塊自己用的是 `store.steampowered.com/ajaxappreviews/<appid>`，參數與回應格式相同，但不理會 `num_per_page=0`（照樣回傳 20 篇）。
+- 評論用官方的 `IUserReviewsService/GetAppReviews`。商店的 `/appreviews/<appid>` 已 deprecated，2026-10-23 起一律 302 回商店首頁（HTML）；商店頁評論區塊自己用的 `/ajaxappreviews/<appid>` 沒有文件，所以不用；它跟 `GetAppReviews` 結果完全相同（499170、900270、1145360 的總數與抽樣）。
 - 商店頁「所有評論」的總數比 API 多幾篇（900270：8,468 對 8464，新舊端點都一樣），好評比例相同。
-- 商店頁的 `filter=summary` 固定回傳 10 篇、只取約 7 天內的評論，不適合時長抽樣，所以抽樣用 `filter=all` + `day_range`。
-- `ajaxappreviews` 沒有文件，是暫時的；官方指定的接手者是 `IUserReviewsService/GetAppReviews`，之後要換過去。用 `input_json` 正確呼叫時，總數與抽樣都跟 `ajaxappreviews` 完全相同（499170、900270、1145360）；細節見 `steam-info-scraper` 的 README。
+- 商店頁的 `filter=summary` 固定回傳 10 篇、只取約 7 天內的評論，不適合時長抽樣，所以抽樣依有幫助程度加 `day_range`。
 - 商店頁是 `X-Frame-Options: DENY`，不能用 iframe 載入。
 - 繁中標籤 429 個（`tagdata/populartags/tchinese`）：16 個帶空格，沒有一個含 `、`、`,`、`，`，所以標籤規則用 `、` 分隔。
 - **未驗證**：開著的頁面直接解析時，SteamDB 擴充插入的元素會不會被價格選擇器誤抓。

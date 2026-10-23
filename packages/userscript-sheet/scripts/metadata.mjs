@@ -34,6 +34,7 @@ export const metadata = {
         'script.googleusercontent.com',
         // The refresh reads the store page and its reviews,
         'store.steampowered.com',
+        'api.steampowered.com',
         // and 最低off from ITAD's lowest price.
         'api.isthereanydeal.com',
     ],

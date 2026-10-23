@@ -3,9 +3,9 @@
 由 `pnpm --filter @watchlist/steam-info-scraper fixtures`（`scripts/fetch-fixtures.mjs`）抓取，2026-10-17；後面帶 appid 時只抓那幾款。
 
 - `store/<appid>.html`：以匿名訪客抓的商店頁（`l=tchinese&cc=tw`）
-- `appreviews/<appid>.json`：用跟 `src/urls.ts` 的 `appReviewsUrl` 相同的參數抓取，只保留解析會讀的欄位，不含評論內文。目前的檔案是 2026-10-17 用舊參數（`num_per_page=50`、沒有明確帶 `day_range` 等）抓的，每款 50 篇；實測新舊參數選到的評論相同，只差篇數。下次重抓就會變成 40 篇（Reventure 是 2026-10-20 用新參數抓的，已經是 40 篇）。裡面的 `query_summary` 是舊算法（所有購買類型）的數字，現在已經不讀。
+- `appreviews/<appid>.json`：用跟 `src/urls.ts` 的 `appReviewsUrl` 相同的參數抓取，只保留解析會讀的欄位，不含評論內文。目前的檔案是 2026-10-17 用舊參數（`num_per_page=50`、沒有明確帶 `day_range` 等）抓的，每款 50 篇；實測新舊參數選到的評論相同，只差篇數。下次重抓就會變成 40 篇（Reventure 是 2026-10-20 用新參數抓的，已經是 40 篇）。裡面的 `query_summary` 是舊算法（所有購買類型）的數字，現在已經不讀。2026-10-23 從舊的 `/appreviews` 格式轉成 `GetAppReviews` 的格式（包進 `response`、拿掉 `success`，沒有評論時拿掉 `reviews`），內容沒有重抓。
 - `itad/lookup/<appid>.json`、`itad/history/<appid>.json`：ITAD 的 `itadLookupUrl`、`itadHistoryUrl` 回應，只保留解析會讀的欄位（加上 title、cut 方便肉眼看），2026-10-20 抓的。不含 API key；`fixtureFetchText` 只接受 `fixtureItadApiKey`，沒有 lookup 檔的 app 當作 ITAD 沒收錄。
-- `reviewsummary/<appid>.json`：`reviewSummaryUrl` 的回應（只有 `query_summary`），2026-10-18 抓的；Dota 2 用 `purchase_type=all`（免費遊戲），其他用 `steam`。
+- `reviewsummary/<appid>.json`：`reviewSummaryUrl` 的回應（只留 `query_summary`），2026-10-18 抓的，2026-10-23 照上面的方式轉成 `GetAppReviews` 的格式；Dota 2 用 `purchase_type=all`（免費遊戲），其他用 `steam`。
 
 | appid | 遊戲 | 涵蓋情境 |
 |---|---|---|

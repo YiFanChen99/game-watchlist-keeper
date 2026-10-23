@@ -6,10 +6,11 @@ import {
     parseReleaseDate,
     parseSteamDbPrices,
     readSteamDbPrices,
+    reviewSampleSize,
     reviewSummaryUrl,
     storePageFetchUrl,
 } from '../src';
-import { loadAppReviewsJson, loadReviewSummaryJson, loadStorePage, loadStorePageHtml } from './fixtures';
+import { loadAppReviewsJson, loadReviewSummaryJson, loadStorePage, loadStorePageHtml, reviewsApiUrl, reviewsInput } from './fixtures';
 
 describe('parseReleaseDate', () => {
     it.each([
@@ -52,13 +53,13 @@ describe('fetchSteamSnapshot', () => {
      */
     function fakeFetch(appId: number, sample?: (query: string) => number) {
         return vi.fn((url: string) => {
-            const params = new URL(url).searchParams;
-            if (!url.includes('/ajaxappreviews/')) return Promise.resolve(loadStorePageHtml(appId));
-            if (params.get('num_per_page') === '0') return Promise.resolve(loadReviewSummaryJson(appId));
+            if (!url.startsWith(reviewsApiUrl)) return Promise.resolve(loadStorePageHtml(appId));
+            const input = reviewsInput(url);
+            if (input.num_per_page !== reviewSampleSize) return Promise.resolve(loadReviewSummaryJson(appId));
             if (!sample) return Promise.resolve(loadAppReviewsJson(appId));
-            const query = params.get('filter') === 'recent' ? 'recent' : params.get('day_range')!;
+            const query = input.filter === 1 ? 'recent' : String(input.day_range);
             const reviews = Array.from({ length: sample(query) }, () => ({ author: { playtime_forever: 60 } }));
-            return Promise.resolve(JSON.stringify({ success: 1, query_summary: { total_positive: 0, total_reviews: 0 }, reviews }));
+            return Promise.resolve(JSON.stringify({ response: { query_summary: { total_positive: 0, total_reviews: 0 }, reviews } }));
         });
     }
     const urls = (fetchText: ReturnType<typeof fakeFetch>) => fetchText.mock.calls.map(([url]) => url).sort();
@@ -72,7 +73,7 @@ describe('fetchSteamSnapshot', () => {
             [appReviewsUrl(2868840), reviewSummaryUrl(2868840, 'steam'), storePageFetchUrl(2868840)].sort(),
         );
         expect(storePageFetchUrl(570)).toBe('https://store.steampowered.com/app/570/?l=tchinese&cc=tw');
-        expect(appReviewsUrl(570)).toContain('day_range=30&');
+        expect(reviewsInput(appReviewsUrl(570))).toMatchObject({ filter: 0, day_range: 30 });
         expect(snapshot.page).toMatchObject({ name: 'Slay the Spire 2', originalPrice: 499, isEarlyAccess: true });
         expect(snapshot.reviews).toMatchObject({ totalPositive: 114861, totalReviews: 186485 });
         expect(snapshot.reviews.playtimeMinutes).toHaveLength(50);
@@ -136,7 +137,7 @@ describe('fetchSteamSnapshot', () => {
         const snapshot = await fetchSteamSnapshot(1145360, fetchText);
 
         expect(urls(fetchText)).toContain(appReviewsUrl(1145360, recent));
-        expect(appReviewsUrl(1145360, recent)).not.toContain('day_range');
+        expect(reviewsInput(appReviewsUrl(1145360, recent))).not.toHaveProperty('day_range');
         expect(snapshot.reviews.playtimeMinutes).toHaveLength(40);
     });
 

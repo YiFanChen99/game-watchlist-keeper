@@ -3,6 +3,8 @@ import { join } from 'node:path';
 
 import { HttpStatusError, type FetchText } from '@watchlist/core';
 
+import { reviewSampleSize } from '../src';
+
 const dir = join(import.meta.dirname, 'fixtures');
 
 /** A saved store page's HTML. */
@@ -15,7 +17,7 @@ export function loadStorePage(appId: number): Document {
     return new DOMParser().parseFromString(loadStorePageHtml(appId), 'text/html');
 }
 
-/** A saved, trimmed `/ajaxappreviews` response body with the playtime sample. */
+/** A saved, trimmed `GetAppReviews` response body with the playtime sample. */
 export function loadAppReviewsJson(appId: number): string {
     return readFileSync(join(dir, 'appreviews', `${appId}.json`), 'utf8');
 }
@@ -33,6 +35,14 @@ export function loadItadLookupJson(appId: number): string {
 /** A saved, trimmed `itadHistoryUrl` response body, for the app it is named after. */
 export function loadItadHistoryJson(appId: number): string {
     return readFileSync(join(dir, 'itad', 'history', `${appId}.json`), 'utf8');
+}
+
+/** Where `appReviewsUrl` and `reviewSummaryUrl` point. */
+export const reviewsApiUrl = 'https://api.steampowered.com/IUserReviewsService/GetAppReviews/v1/';
+
+/** The `input_json` of an `appReviewsUrl` or `reviewSummaryUrl`. */
+export function reviewsInput(url: string): { appid: number; filter: number; day_range?: number; num_per_page: number } {
+    return JSON.parse(new URL(url).searchParams.get('input_json')!) as ReturnType<typeof reviewsInput>;
 }
 
 /** The API key `fixtureFetchText` takes for ITAD; any other is refused, as ITAD would. */
@@ -72,13 +82,13 @@ export const fixtureFetchText: FetchText = (url, headers) => {
     if (url.startsWith('https://api.isthereanydeal.com/')) {
         return fetchItadFixture(new URL(url), headers);
     }
-    const appId = Number(/\/(?:app|ajaxappreviews)\/(\d+)/.exec(url)?.[1]);
-    if (url.startsWith('https://store.steampowered.com/ajaxappreviews/')) {
-        const isSummary = new URL(url).searchParams.get('num_per_page') === '0';
-        return Promise.resolve(isSummary ? loadReviewSummaryJson(appId) : loadAppReviewsJson(appId));
+    if (url.startsWith(reviewsApiUrl)) {
+        const input = reviewsInput(url);
+        const isSample = input.num_per_page === reviewSampleSize;
+        return Promise.resolve(isSample ? loadAppReviewsJson(input.appid) : loadReviewSummaryJson(input.appid));
     }
     if (url.startsWith('https://store.steampowered.com/app/')) {
-        return Promise.resolve(loadStorePageHtml(appId));
+        return Promise.resolve(loadStorePageHtml(Number(/\/app\/(\d+)/.exec(url)?.[1])));
     }
     return Promise.reject(new Error(`unexpected URL ${url}`));
 };

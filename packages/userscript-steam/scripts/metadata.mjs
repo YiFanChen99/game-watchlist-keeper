@@ -30,6 +30,8 @@ export const metadata = {
         // Apps Script web apps 302-redirect /exec responses here.
         'script.googleusercontent.com',
         'store.steampowered.com',
+        // Reviews' counts and playtime sample.
+        'api.steampowered.com',
         // 最低off's lowest price.
         'api.isthereanydeal.com',
     ],

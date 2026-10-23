@@ -1,16 +1,19 @@
-/** The subset of the `/ajaxappreviews/<appid>?json=1` response that is read. */
+/** The subset of the `GetAppReviews` response that is read. */
 export interface AppReviewsResponse {
-    success: number;
-    query_summary: {
-        total_positive: number;
-        total_reviews: number;
-    };
-    reviews: {
-        author: {
-            /** Total playtime, in minutes. */
-            playtime_forever: number;
+    response: {
+        /** Missing for an unknown app, which still answers 200. */
+        query_summary?: {
+            total_positive: number;
+            total_reviews: number;
         };
-    }[];
+        /** Missing when no review matches. */
+        reviews?: {
+            author: {
+                /** Total playtime, in minutes. */
+                playtime_forever: number;
+            };
+        }[];
+    };
 }
 
 /** The review counts the store page shows as 「所有評論」. */
@@ -24,12 +27,12 @@ export interface AppReviewsInfo extends ReviewSummary {
     playtimeMinutes: number[];
 }
 
-function parseResponse(json: string): AppReviewsResponse {
-    const data = JSON.parse(json) as AppReviewsResponse;
-    if (data.success !== 1) {
-        throw new Error(`appreviews failed: success=${data.success}`);
+function parseResponse(json: string): Required<AppReviewsResponse['response']> {
+    const { response } = JSON.parse(json) as AppReviewsResponse;
+    if (!response.query_summary) {
+        throw new Error('GetAppReviews returned no query_summary');
     }
-    return data;
+    return { query_summary: response.query_summary, reviews: response.reviews ?? [] };
 }
 
 /**

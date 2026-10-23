@@ -3,7 +3,7 @@ import { Column } from '@watchlist/game-record-writer';
 import { SheetApiError, type SheetApi } from '@watchlist/sheet-api';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { fixtureFetchText, fixtureItadApiKey, loadStorePage } from '../../steam-info-scraper/test/fixtures';
+import { fixtureFetchText, fixtureItadApiKey, loadStorePage, reviewsApiUrl } from '../../steam-info-scraper/test/fixtures';
 import { startSheetWriter } from '../src/sheetWriter';
 
 const api = {
@@ -580,7 +580,7 @@ describe('時長 button', () => {
         expect(playtime).toMatch(/^中位\d+H，PR\d+ \d+H。$/);
         expect(type).toBe('text');
         expect(status('playtime')).toBe(`已複製：${playtime}`);
-        expect(steamFetchText.mock.calls.every(([url]) => url.includes('/ajaxappreviews/'))).toBe(true);
+        expect(steamFetchText.mock.calls.every(([url]) => url.startsWith(reviewsApiUrl))).toBe(true);
         expect(api.readRow).not.toHaveBeenCalled();
         expect(api.updateRow).not.toHaveBeenCalled();
         expect(api.appendRow).not.toHaveBeenCalled();

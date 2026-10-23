@@ -33,6 +33,7 @@ export const metadata = {
         'www.steamgifts.com',
         // ↻ refreshes a row from the store page and its reviews,
         'store.steampowered.com',
+        'api.steampowered.com',
         // and 最低off from ITAD's lowest price.
         'api.isthereanydeal.com',
     ],

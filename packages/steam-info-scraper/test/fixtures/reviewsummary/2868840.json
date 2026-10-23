@@ -1,12 +1,12 @@
 {
-  "success": 1,
-  "query_summary": {
-    "num_reviews": 0,
-    "review_score": 5,
-    "review_score_desc": "Mixed",
-    "total_positive": 114861,
-    "total_negative": 71624,
-    "total_reviews": 186485
-  },
-  "reviews": []
+  "response": {
+    "query_summary": {
+      "num_reviews": 0,
+      "review_score": 5,
+      "review_score_desc": "Mixed",
+      "total_positive": 114861,
+      "total_negative": 71624,
+      "total_reviews": 186485
+    }
+  }
 }
