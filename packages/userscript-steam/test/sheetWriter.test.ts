@@ -580,7 +580,7 @@ describe('時長 button', () => {
         expect(playtime).toMatch(/^中位\d+H，PR\d+ \d+H。$/);
         expect(type).toBe('text');
         expect(status('playtime')).toBe(`已複製：${playtime}`);
-        expect(steamFetchText.mock.calls.every(([url]) => url.includes('/appreviews/'))).toBe(true);
+        expect(steamFetchText.mock.calls.every(([url]) => url.includes('/ajaxappreviews/'))).toBe(true);
         expect(api.readRow).not.toHaveBeenCalled();
         expect(api.updateRow).not.toHaveBeenCalled();
         expect(api.appendRow).not.toHaveBeenCalled();

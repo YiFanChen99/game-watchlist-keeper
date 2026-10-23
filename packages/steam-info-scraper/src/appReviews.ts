@@ -1,4 +1,4 @@
-/** The subset of the `/appreviews/<appid>?json=1` response that is read. */
+/** The subset of the `/ajaxappreviews/<appid>?json=1` response that is read. */
 export interface AppReviewsResponse {
     success: number;
     query_summary: {

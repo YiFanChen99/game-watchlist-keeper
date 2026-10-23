@@ -53,7 +53,7 @@ describe('fetchSteamSnapshot', () => {
     function fakeFetch(appId: number, sample?: (query: string) => number) {
         return vi.fn((url: string) => {
             const params = new URL(url).searchParams;
-            if (!url.includes('/appreviews/')) return Promise.resolve(loadStorePageHtml(appId));
+            if (!url.includes('/ajaxappreviews/')) return Promise.resolve(loadStorePageHtml(appId));
             if (params.get('num_per_page') === '0') return Promise.resolve(loadReviewSummaryJson(appId));
             if (!sample) return Promise.resolve(loadAppReviewsJson(appId));
             const query = params.get('filter') === 'recent' ? 'recent' : params.get('day_range')!;

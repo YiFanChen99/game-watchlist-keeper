@@ -15,7 +15,7 @@ export function loadStorePage(appId: number): Document {
     return new DOMParser().parseFromString(loadStorePageHtml(appId), 'text/html');
 }
 
-/** A saved, trimmed `/appreviews` response body with the playtime sample. */
+/** A saved, trimmed `/ajaxappreviews` response body with the playtime sample. */
 export function loadAppReviewsJson(appId: number): string {
     return readFileSync(join(dir, 'appreviews', `${appId}.json`), 'utf8');
 }
@@ -72,8 +72,8 @@ export const fixtureFetchText: FetchText = (url, headers) => {
     if (url.startsWith('https://api.isthereanydeal.com/')) {
         return fetchItadFixture(new URL(url), headers);
     }
-    const appId = Number(/\/(?:app|appreviews)\/(\d+)/.exec(url)?.[1]);
-    if (url.startsWith('https://store.steampowered.com/appreviews/')) {
+    const appId = Number(/\/(?:app|ajaxappreviews)\/(\d+)/.exec(url)?.[1]);
+    if (url.startsWith('https://store.steampowered.com/ajaxappreviews/')) {
         const isSummary = new URL(url).searchParams.get('num_per_page') === '0';
         return Promise.resolve(isSummary ? loadReviewSummaryJson(appId) : loadAppReviewsJson(appId));
     }

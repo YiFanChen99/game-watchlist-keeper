@@ -56,7 +56,10 @@
 - 讀名稱欄整欄的公式約 0.7 秒。整表傾印約 159KB，超過 CacheService 單一值的 100KB，所以要 gzip（約 73KB）後分塊存。
 
 ### Steam
-- 舊的 `store.steampowered.com/appreviews` 已 deprecated，新版是 `IUserReviewsService/GetAppReviews`（不用 key，回應沒有 `success`，要多 `@connect api.steampowered.com`）。
+- `store.steampowered.com/appreviews/<appid>` 自 2026-10 起一律 302 回商店首頁（HTML）；商店頁的評論區塊自己用的是 `store.steampowered.com/ajaxappreviews/<appid>`，參數與回應格式相同，但不理會 `num_per_page=0`（照樣回傳 20 篇）。
+- 商店頁「所有評論」的總數比 API 多幾篇（900270：8,468 對 8464，新舊端點都一樣），好評比例相同。
+- 商店頁的 `filter=summary` 固定回傳 10 篇、只取約 7 天內的評論，不適合時長抽樣，所以抽樣用 `filter=all` + `day_range`。
+- 否決 `IUserReviewsService/GetAppReviews`（不用 key，回應沒有 `success`，要多 `@connect api.steampowered.com`）：同樣參數下 `purchase_type=steam` 的總數只有商店頁的約六成（499170：1652 對 2812）。
 - 商店頁是 `X-Frame-Options: DENY`，不能用 iframe 載入。
 - 繁中標籤 429 個（`tagdata/populartags/tchinese`）：16 個帶空格，沒有一個含 `、`、`,`、`，`，所以標籤規則用 `、` 分隔。
 - **未驗證**：開著的頁面直接解析時，SteamDB 擴充插入的元素會不會被價格選擇器誤抓。

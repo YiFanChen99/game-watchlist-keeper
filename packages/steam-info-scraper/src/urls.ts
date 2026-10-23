@@ -33,6 +33,21 @@ export const reviewSampleQueries: readonly ReviewSampleQuery[] = [
 ];
 
 /**
+ * The store page's review filters that are left at "any": date range, playtime and hardware.
+ * Spelled out so a Steam default change cannot narrow the reviews.
+ */
+const unfilteredReviewParams = {
+    date_range_type: 'all',
+    playtime_filter_min: '0',
+    playtime_filter_max: '0',
+    playtime_type: 'all',
+    hardware_os: 'all',
+    hardware_cpu: 'all',
+    hardware_gpu: 'all',
+    hardware_device_type: 'all',
+};
+
+/**
  * The store page's own review query (review quality on, off-topic activity kept), except for
  * every language instead of the visitor's and `sampleQuery` for which reviews. Every parameter
  * is spelled out so a Steam default change cannot move the sample.
@@ -42,6 +57,7 @@ export function appReviewsUrl(appId: number, sampleQuery = reviewSampleQueries[0
         json: '1',
         filter: sampleQuery.filter,
         ...(sampleQuery.filter === 'all' ? { day_range: String(sampleQuery.dayRange) } : {}),
+        ...unfilteredReviewParams,
         language: 'all',
         review_type: 'all',
         purchase_type: 'all',
@@ -49,7 +65,7 @@ export function appReviewsUrl(appId: number, sampleQuery = reviewSampleQueries[0
         use_review_quality: '1',
         num_per_page: String(reviewSampleSize),
     }).toString();
-    return `https://store.steampowered.com/appreviews/${appId}?${query}`;
+    return `https://store.steampowered.com/ajaxappreviews/${appId}?${query}`;
 }
 
 /**
@@ -60,17 +76,19 @@ export type ReviewPurchaseType = 'steam' | 'all';
 
 /**
  * The counts behind the store page's 「所有評論」: every language and all time, off-topic review
- * activity left out. No reviews are returned, only `query_summary`.
+ * activity left out. Only `query_summary` is read; `num_per_page=0` is ignored, so the first
+ * page of reviews still comes along.
  */
 export function reviewSummaryUrl(appId: number, purchaseType: ReviewPurchaseType): string {
     const query = new URLSearchParams({
         json: '1',
         filter: 'all',
+        ...unfilteredReviewParams,
         language: 'all',
         review_type: 'all',
         purchase_type: purchaseType,
         filter_offtopic_activity: '1',
         num_per_page: '0',
     }).toString();
-    return `https://store.steampowered.com/appreviews/${appId}?${query}`;
+    return `https://store.steampowered.com/ajaxappreviews/${appId}?${query}`;
 }

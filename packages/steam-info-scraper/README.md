@@ -9,8 +9,8 @@
 | 來源 | 函式 | 取得 |
 | --- | --- | --- |
 | 商店頁 | `parseStorePage` | 名稱、原價（TWD，特價時取原價，免費為 `0`）、發售日、搶先體驗、Demo、支援介面的語言、使用者標籤 |
-| `/appreviews` API（`reviewSummaryUrl`） | `parseReviewSummary` | 商店頁「所有評論」的正評數 / 總評論數 |
-| `/appreviews` API（`appReviewsUrl`） | `parseReviewSample` | 抽樣評論者的遊玩時數（分鐘） |
+| `/ajaxappreviews` API（`reviewSummaryUrl`） | `parseReviewSummary` | 商店頁「所有評論」的正評數 / 總評論數 |
+| `/ajaxappreviews` API（`appReviewsUrl`） | `parseReviewSample` | 抽樣評論者的遊玩時數（分鐘） |
 | SteamDB 擴充套件的區塊 | `readSteamDbPrices` / `parseSteamDbPrices` | 史低價格 |
 | ITAD API（`itadLookupUrl`、`itadHistoryUrl`） | `parseItadLookup` / `parseItadHistory` | Steam AppID 對應的 ITAD 遊戲；Steam TW 的每一筆價格紀錄（價格、當時的原價、時間） |
 

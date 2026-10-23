@@ -69,10 +69,23 @@ function trimAppReviews(json) {
 /** Free apps: `fetchSteamSnapshot` counts every purchase type for them. Keep in sync with `apps`. */
 const freeApps = new Set(['570']);
 
+/** Same as `unfilteredReviewParams` in src/urls.ts, which this script cannot import. Keep them in sync. */
+const unfilteredReviewParams = {
+    date_range_type: 'all',
+    playtime_filter_min: '0',
+    playtime_filter_max: '0',
+    playtime_type: 'all',
+    hardware_os: 'all',
+    hardware_cpu: 'all',
+    hardware_gpu: 'all',
+    hardware_device_type: 'all',
+};
+
 /** Same as `reviewSummaryUrl` in src/urls.ts, which this script cannot import. Keep them in sync. */
 const reviewSummaryQuery = purchaseType => new URLSearchParams({
     json: '1',
     filter: 'all',
+    ...unfilteredReviewParams,
     language: 'all',
     review_type: 'all',
     purchase_type: purchaseType,
@@ -85,6 +98,7 @@ const appReviewsQuery = new URLSearchParams({
     json: '1',
     filter: 'all',
     day_range: '30',
+    ...unfilteredReviewParams,
     language: 'all',
     review_type: 'all',
     purchase_type: 'all',
@@ -149,11 +163,11 @@ for (const appId of requested.length ? requested : Object.keys(apps)) {
     const html = await fetchText(`https://store.steampowered.com/app/${appId}/?l=tchinese&cc=tw`);
     await writeFile(new URL(`store/${appId}.html`, dir), html);
 
-    const reviews = await fetchText(`https://store.steampowered.com/appreviews/${appId}?${appReviewsQuery}`);
+    const reviews = await fetchText(`https://store.steampowered.com/ajaxappreviews/${appId}?${appReviewsQuery}`);
     await writeFile(new URL(`appreviews/${appId}.json`, dir), `${JSON.stringify(trimAppReviews(reviews), null, 2)}\n`);
 
     const purchaseType = freeApps.has(appId) ? 'all' : 'steam';
-    const summary = await fetchText(`https://store.steampowered.com/appreviews/${appId}?${reviewSummaryQuery(purchaseType)}`);
+    const summary = await fetchText(`https://store.steampowered.com/ajaxappreviews/${appId}?${reviewSummaryQuery(purchaseType)}`);
     await writeFile(new URL(`reviewsummary/${appId}.json`, dir), `${JSON.stringify(trimAppReviews(summary), null, 2)}\n`);
 
     console.log(`fetched ${appId}`);

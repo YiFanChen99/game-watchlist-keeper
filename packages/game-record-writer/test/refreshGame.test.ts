@@ -159,7 +159,7 @@ describe('fetchPlaytime', () => {
 
         const playtime = await fetchPlaytime(2868840, fetchText);
 
-        expect(fetchText.mock.calls.every(([url]) => url.includes('/appreviews/'))).toBe(true);
+        expect(fetchText.mock.calls.every(([url]) => url.includes('/ajaxappreviews/'))).toBe(true);
         const { updates } = await refreshGame(2868840, { fetchText: fixtureFetchText, store: fakeStore({}).store });
         expect(playtime).toBe(extractPlaytime(String(updates[Column.detail])));
         expect(playtime).toMatch(/^中位\d+H，PR\d+ \d+H。$/);

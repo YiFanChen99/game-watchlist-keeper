@@ -1,6 +1,6 @@
 {
   "name": "@watchlist/userscript-steam",
-  "version": "3.1.0",
+  "version": "3.1.1",
   "private": true,
   "description": "On a Steam store page, add the game to the watchlist sheet, or refresh its row",
   "author": "YiFanChen99",
