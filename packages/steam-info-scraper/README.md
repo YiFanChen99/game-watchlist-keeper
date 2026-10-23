@@ -24,6 +24,10 @@
 
 - 不直接發網路請求：`fetchSteamSnapshot` 的 `fetchText` 由呼叫端注入（userscript 用 `GM_xmlhttpRequest`，測試用 fixtures），所以能在 Node 上跑測試。HTML 預設用瀏覽器的 `DOMParser` 解析，Node 上要傳 `parseHtml`。
 - 商店頁要用 `storePageFetchUrl` 抓：它固定 `l=tchinese&cc=tw`，解析器依賴繁中字樣與台幣價格。使用者開著的商店頁如果已經是繁中（`<html lang="zh-tw">`）、台幣（`meta[itemprop="priceCurrency"]` 是 `TWD`；沒有價格的頁面沒有這個 meta，也不需要），`matchesFetchedStorePage` 回 true，`fetchSteamSnapshot` 的 `openPage` 就直接解析它，不重抓；不符合時照樣抓。
+- 評論暫時用 `store.steampowered.com/ajaxappreviews/<appid>`，之後要換成官方的 `IUserReviewsService/GetAppReviews`：
+   - 原本的 `/appreviews` 官方已標為 deprecated（[User Reviews](https://partner.steamgames.com/doc/store/getreviews)），實測 2026-10-23 起不管哪款遊戲都 302 回商店首頁（HTML），解析時會報 `Unexpected token '<'`。
+   - `ajaxappreviews` 是商店頁評論區塊自己用的端點，沒有文件，不保證能用多久。參數與回應跟 `/appreviews` 相同，只是不理會 `num_per_page=0`，照樣回傳 20 篇。
+   - 官方指定的接手者是 [`GetAppReviews`](https://partner.steamgames.com/doc/webapi/IUserReviewsService)，實測總數與抽樣都跟 `ajaxappreviews` 完全相同。參數放在 `input_json`、值是 enum，`languages` 是陣列且沒給時只算英文；回應包在 `response` 裡、沒有 `success`；不帶 key 共用較低的限流（超過回 429）；三支 userscript 都要多 `@connect api.steampowered.com`。
 - 評價度不從商店頁讀：匿名抓到的頁面只顯示訪客語言和近 30 天的評論。改用 `reviewSummaryUrl` 取得「所有評論」的數字：所有語言、全期、排除離題評論活動，只算 Steam 購買者（免費遊戲算全部購買類型）。實測（2026-10-18）跟商店頁顯示的一致，例如 Hades 287,080 篇、97.99%。
 - 時長抽樣用 `appReviewsUrl`：跟商店頁自己的評論列表一樣（近 30 天、依有幫助程度），只有 `language=all`，每次 `reviewSampleSize`（40）篇。抽到不到 `reviewSampleMinimumRatio`（8 成，32 篇）時依序改抽 `reviewSampleQueries` 的下一個：近 365 天依有幫助程度（`day_range` 最多只能到 365），再來是依發表時間由新到舊（`filter=recent`，不限期間）。
    - 範圍內一篇都沒有時，Steam 會自動放寬到全期；範圍內只有幾篇時就只回那幾篇，所以近一年只有零星評論的遊戲要靠 `recent`（實測 2026-10-18：403700 總共 300 篇，365 天只抽到 7 篇，`recent` 抽到 40 篇）。
