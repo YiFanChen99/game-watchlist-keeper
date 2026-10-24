@@ -103,6 +103,19 @@ const cases: Record<number, Expected> = {
         categories: ['單人', 'Steam 成就', 'Steam 交換卡片', 'Steam 雲端', '親友同享'],
         genres: ['冒險', '獨立製作'],
     },
+    1061880: {
+        name: 'Conan Chop Chop',
+        originalPrice: 269,
+        releaseDate: { year: 2022, month: 3, day: 1 },
+        isEarlyAccess: false,
+        // In the side column, not above the purchase area.
+        hasDemo: true,
+        supports: ['簡體中文', '英文'],
+        lacks: ['繁體中文'],
+        firstTags: ['輕度 Rogue', '動作類 Rogue'],
+        categories: ['單人', '線上合作', '共享 / 分割螢幕合作', 'Steam 成就', 'Steam 交換卡片', 'Steam 雲端', '遠端同樂', '親友同享'],
+        genres: ['動作', '冒險', '獨立製作'],
+    },
 };
 
 describe('parseStorePage', () => {

@@ -36,6 +36,12 @@ function textOf(element: Element | null | undefined): string | null {
     return value === undefined || value === '' ? null : value;
 }
 
+/**
+ * A demo's download block: above the purchase area, or in the side column when the developer
+ * turned off `show_above_purchase` (e.g. Conan Chop Chop).
+ */
+const demoSelector = '.demo_above_purchase, #demoGameBtn, .download_demo_button';
+
 /** Purchase blocks of single packages: subscription / bundle dropdowns and the demo block are skipped. */
 const purchaseBlockSelector = '.game_area_purchase_game:not(.game_area_purchase_game_dropdown_subscription):not(.demo_above_purchase)';
 const blockPriceSelector = '.game_purchase_action .discount_original_price, .game_purchase_action .game_purchase_price';
@@ -128,7 +134,7 @@ export function parseStorePage(doc: ParentNode): StorePageInfo {
         originalPrice: parseOriginalPrice(doc, name),
         releaseDate: findReleaseDate(doc),
         isEarlyAccess: doc.querySelector('.early_access_header') !== null,
-        hasDemo: doc.querySelector('.demo_above_purchase, #demoGameBtn') !== null,
+        hasDemo: doc.querySelector(demoSelector) !== null,
         interfaceLanguages: parseInterfaceLanguages(doc),
         tags: textsOf(doc, '.popular_tags a.app_tag'),
         categories: textsOf(doc, '#category_block a.game_area_details_specs_ctn .label'),

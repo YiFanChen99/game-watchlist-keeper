@@ -25,6 +25,7 @@ const apps = {
     570: 'Dota 2: free to play',
     1860960: 'Eira: no longer sold on Steam, no price or demo shown',
     900270: 'Reventure: the original price rose after the lowest price',
+    1061880: 'Conan Chop Chop: a demo shown in the side column, not above the purchase area',
 };
 
 const itadOnly = process.argv.includes('--itad-only');
