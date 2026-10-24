@@ -250,12 +250,20 @@ describe('planRefresh', () => {
     });
 
     it('reports price and release date changes with their deltas', () => {
-        const oldRow = { [Column.originalPrice]: '459', [Column.releaseDate]: '2026/2/26' };
+        const oldRow = { [Column.originalPrice]: '459', [Column.releaseDate]: '2026/2/2' };
 
         expect(planRefresh(snapshot, oldRow, today).changes).toEqual([
             { column: Column.originalPrice, oldValue: '459', newValue: 499, delta: 40 },
-            { column: Column.releaseDate, oldValue: '2026/2/26', newValue: '2026/3/5', delta: 7 },
+            { column: Column.releaseDate, oldValue: '2026/2/2', newValue: '2026/3/5', delta: 31 },
         ]);
+    });
+
+    it('does not report a release date moved by 30 days or less, either way', () => {
+        for (const old of ['2026/2/3', '2026/2/26', '2026/4/4']) {
+            expect(planRefresh(snapshot, { [Column.releaseDate]: old }, today).changes).toEqual([]);
+        }
+        expect(planRefresh(snapshot, { [Column.releaseDate]: '2026/4/5' }, today).changes)
+            .toEqual([{ column: Column.releaseDate, oldValue: '2026/4/5', newValue: '2026/3/5', delta: -31 }]);
     });
 
     it('treats the same date in another format as unchanged', () => {

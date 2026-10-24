@@ -35,7 +35,10 @@ export function formatChange({ column, oldValue, newValue, delta }: ValueChange)
 export interface RefreshPlan {
     /** Only the cells to write. */
     updates: SheetRowValues;
-    /** Changed price, release date, special and detail playtime. Filling a blank cell is not a change. */
+    /**
+     * Changed price, release date (moved over 30 days), special and detail playtime.
+     * Filling a blank cell is not a change.
+     */
     changes: ValueChange[];
 }
 
@@ -135,6 +138,9 @@ function priceChange(oldValue: CellValue | undefined, newValue: number): ValueCh
     return { column: Column.originalPrice, oldValue, newValue, delta };
 }
 
+/** A release date moved by at most this many days, either way, is not worth reporting. */
+const maxUnreportedReleaseShiftDays = 30;
+
 function releaseDateChange(oldValue: CellValue | undefined, newValue: string): ValueChange | null {
     if (isBlank(oldValue)) {
         return null;
@@ -143,7 +149,9 @@ function releaseDateChange(oldValue: CellValue | undefined, newValue: string): V
     const newDate = parseSheetDate(newValue);
     if (oldDate && newDate) {
         const delta = Math.round((newDate.getTime() - oldDate.getTime()) / msPerDay);
-        return delta === 0 ? null : { column: Column.releaseDate, oldValue, newValue, delta };
+        return Math.abs(delta) <= maxUnreportedReleaseShiftDays
+            ? null
+            : { column: Column.releaseDate, oldValue, newValue, delta };
     }
     return String(oldValue).trim() === newValue ? null : { column: Column.releaseDate, oldValue, newValue, delta: null };
 }
