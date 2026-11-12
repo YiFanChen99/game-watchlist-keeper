@@ -72,7 +72,7 @@ function formatInfo({ want, prices }: GameInfo): string {
     return `W${want || '-'} $${show(all => formatPrice(all.wanted))}, 史$${show(formatHistoricalLow)}`;
 }
 
-/** e.g. `W3`; a dump's owned mark in place of the want level as `W-已有`, as the SteamGifts annotation shows it. */
+/** e.g. `W3`, or `W3-已有` for a game the dump marks owned, as the SteamGifts annotation shows it. */
 function formatWant(game: SheetDumpRow): string {
     const want = String(game.K);
     return `${/^(\d|$)/.test(want) ? 'W' : 'W-'}${want}`;

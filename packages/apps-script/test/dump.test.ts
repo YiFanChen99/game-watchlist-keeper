@@ -19,8 +19,16 @@ const rows: CellValue[][] = [
     row('Zero want', '', 0),
     row('Zero string want', '', '0'),
     row('Unknown want', '', '?'),
-    row('Owned', '2024/1/2', 2, '已有(Steam)'),
     row('Deal number', '', 4, 50),
+];
+
+/**
+ * Left out of the comparison with the original, which put any text around 已有 in place of the
+ * want level; the dump now keeps the want level and adds 已有 only for exactly 已有.
+ */
+const ownedRows: CellValue[][] = [
+    row('Owned', '2024/1/2', 2, '已有'),
+    row('Owned on Steam', '', 4, '已有(Steam)'),
 ];
 
 /** Run the original web app's doGet against the same cells, through stubs of the services it calls. */
@@ -50,13 +58,16 @@ describe('buildDump', () => {
         expect(JSON.parse(JSON.stringify(buildDump(header, rows)))).toEqual(legacyDump());
     });
 
-    it('keeps named rows with a want level, and replaces it with the owned mark', () => {
+    it('keeps named rows with a want level', () => {
         const { games, labelMap } = buildDump(header, rows);
 
         expect(labelMap).toEqual({ B: '名稱', G: '更新日', K: '購買/期待度1~5' });
-        expect(games.map(game => game.B)).toEqual(['Hades / 黑帝斯', 'Unknown want', 'Owned', 'Deal number']);
+        expect(games.map(game => game.B)).toEqual(['Hades / 黑帝斯', 'Unknown want', 'Deal number']);
         expect(games[0]).toEqual({ B: 'Hades / 黑帝斯', G: new Date(2025, 2, 4).toDateString(), K: 3 });
-        expect(games[2]?.K).toBe('已有(Steam)');
+    });
+
+    it('adds 已有 to the want level of a row whose AnyDeal is exactly 已有', () => {
+        expect(buildDump(header, ownedRows).games.map(game => game.K)).toEqual(['2-已有', 4]);
     });
 
     it('adds the app id each name HYPERLINK links', () => {

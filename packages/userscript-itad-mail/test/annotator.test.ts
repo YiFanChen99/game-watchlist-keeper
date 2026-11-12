@@ -179,8 +179,8 @@ describe('annotate a game outside the Waitlist', () => {
     });
 
     it("joins several matched rows with /, and shows an owned mark as SteamGifts does", async () => {
-        const owned: SheetDumpRow = { B: 'Tacoma / 塔科馬', K: '已有' };
-        expect((await annotateTacoma(fakeLookup([tacoma, owned])))?.textContent).toBe(' (W3 / W-已有)');
+        const owned: SheetDumpRow = { B: 'Tacoma / 塔科馬', K: '2-已有' };
+        expect((await annotateTacoma(fakeLookup([tacoma, owned])))?.textContent).toBe(' (W3 / W2-已有)');
     });
 
     it('shows nothing for a game the sheet lacks', async () => {

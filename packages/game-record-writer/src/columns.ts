@@ -16,7 +16,7 @@ export const Column = {
     lowestPrice: '最低$',
     /** 1–5, `?` for a game not rated yet, or an owned mark. */
     wantLevel: '購買/期待度1~5',
-    /** Hand-kept; read only, for the owned mark (e.g. `已有`) the dump puts in place of the want level. */
+    /** Hand-kept; read only: exactly `已有` marks an owned game, which the dump shows as e.g. `4-已有`. */
     anyDeal: 'AnyDeal',
     /** The user's own filter tag categories, space-separated, from the tag rules (`matchTagRules`). */
     mode: '模式',

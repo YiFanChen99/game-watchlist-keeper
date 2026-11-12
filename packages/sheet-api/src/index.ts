@@ -11,7 +11,10 @@ export interface SheetDumpRow {
     B: string;
     /** Update date, parseable by `new Date()`. Empty or absent when never updated. */
     G?: string;
-    /** How much the game is wanted, or the owned mark taken from the AnyDeal column. */
+    /**
+     * How much the game is wanted; `<want level>-已有`, e.g. `4-已有`, when the AnyDeal column
+     * marks it owned, so a client showing `W${K}` shows `W4-已有`.
+     */
     K: string | number;
     /** The Steam app id the name HYPERLINK links; absent when the name has none. */
     appId?: number;
@@ -30,11 +33,13 @@ export interface DumpSourceRow {
     appId: number | null;
 }
 
-const ownedMark = /[^\d]*已有[^\d]*/;
+/** The whole AnyDeal cell of a game the user owns. */
+const ownedMark = '已有';
 
 /**
  * One sheet row as the dump has it. Shared by the web app's dump and a client reading a single
- * row, so both apply the same rules: an owned mark (e.g. `已有`) in AnyDeal replaces the want level.
+ * row, so both apply the same rules: an AnyDeal cell of exactly `已有` turns the want level into
+ * `<want level>-已有`.
  *
  * @returns null for a row without a name, or whose want level is blank or 0.
  */
@@ -43,11 +48,11 @@ export function toDumpRow({ name = '', updatedOn, want = '', anyDeal = '', appId
     if (name === '' || want === '' || Number(want) === 0) {
         return null;
     }
-    const owned = ownedMark.exec(String(anyDeal))?.[0];
+    const wantLevel = typeof want === 'number' ? want : String(want);
     return {
         B: String(name),
         G: updatedOn,
-        K: owned ?? (typeof want === 'number' ? want : String(want)),
+        K: String(anyDeal) === ownedMark ? `${wantLevel}-${ownedMark}` : wantLevel,
         ...(appId === null ? {} : { appId }),
     };
 }

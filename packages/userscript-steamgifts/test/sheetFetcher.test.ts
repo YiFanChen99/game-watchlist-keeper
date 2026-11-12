@@ -90,13 +90,13 @@ describe('refetchGame', () => {
         expect(saved()?.time).toBe(123);
     });
 
-    it('takes an owned mark in AnyDeal over the want level, as the dump does', async () => {
+    it('adds 已有 in AnyDeal to the want level, as the dump does', async () => {
         api.readRow.mockResolvedValue(row({
             [Column.name]: 'Tacoma', [Column.updatedOn]: '', [Column.wantLevel]: 3, [Column.anyDeal]: '已有',
         }));
         const cached = data();
         await refetchGame(cached, 343860);
-        expect(cached.games.find(game => game.appId === 343860)).toMatchObject({ K: '已有', G: '' });
+        expect(cached.games.find(game => game.appId === 343860)).toMatchObject({ K: '3-已有', G: '' });
     });
 
     it('drops the games of a row whose want level is now 0', async () => {

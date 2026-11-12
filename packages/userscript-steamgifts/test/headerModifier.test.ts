@@ -73,10 +73,10 @@ describe('HeaderModifier matching', () => {
         modifierFor([
             { B: 'LISA: The Joyful', K: 3, G: today },
             { B: 'LISA: The Painful', K: 2, G: today },
-            { B: 'Gone Home', K: '已有', G: today },
+            { B: 'Gone Home', K: '2-已有', G: today },
         ]).modifyGiveaways();
         expect(annotationText('LISA')).toBe(' (W3/2) ⟲');
-        expect(annotationText('Gone Home')).toBe(' (W-已有) ⟲');
+        expect(annotationText('Gone Home')).toBe(' (W2-已有) ⟲');
     });
 
     it('marks a giveaway no game matches, and does not count it', () => {
